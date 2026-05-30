@@ -20,9 +20,10 @@ type Props = {
   receiverId: string;
   receiverName: string;
   videoId?: string;
+  streamId?: string;
 };
 
-export function GiftDialog({ open, onOpenChange, receiverId, receiverName, videoId }: Props) {
+export function GiftDialog({ open, onOpenChange, receiverId, receiverName, videoId, streamId }: Props) {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<GiftType | null>(null);
@@ -50,6 +51,7 @@ export function GiftDialog({ open, onOpenChange, receiverId, receiverName, video
       _gift_type: gift.type,
       _coin_amount: gift.coins,
       _video_id: videoId ?? undefined,
+      _stream_id: streamId ?? undefined,
     });
     setSending(false);
     if (error) {
