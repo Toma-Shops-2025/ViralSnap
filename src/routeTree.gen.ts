@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as EarningsRouteImport } from './routes/earnings'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
@@ -29,6 +30,11 @@ const WalletRoute = WalletRouteImport.update({
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EarningsRoute = EarningsRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
   '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
   '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
   '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/discover'
     | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/discover'
     | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/discover'
     | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   CampaignsRoute: typeof CampaignsRoute
   DiscoverRoute: typeof DiscoverRoute
   EarningsRoute: typeof EarningsRoute
+  SearchRoute: typeof SearchRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
@@ -187,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/earnings': {
@@ -262,6 +282,7 @@ const rootRouteChildren: RootRouteChildren = {
   CampaignsRoute: CampaignsRoute,
   DiscoverRoute: DiscoverRoute,
   EarningsRoute: EarningsRoute,
+  SearchRoute: SearchRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,
@@ -271,3 +292,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
