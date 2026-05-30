@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -52,6 +53,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
+  id: '/live/$streamId',
+  path: '/live/$streamId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/discover': typeof DiscoverRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/discover': typeof DiscoverRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live': typeof LiveIndexRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/discover': typeof DiscoverRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/discover'
     | '/upload'
     | '/wallet'
+    | '/live/$streamId'
     | '/u/$username'
     | '/live/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/discover'
     | '/upload'
     | '/wallet'
+    | '/live/$streamId'
     | '/u/$username'
     | '/live'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/discover'
     | '/upload'
     | '/wallet'
+    | '/live/$streamId'
     | '/u/$username'
     | '/live/'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   DiscoverRoute: typeof DiscoverRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
+  LiveStreamIdRoute: typeof LiveStreamIdRoute
   UUsernameRoute: typeof UUsernameRoute
   LiveIndexRoute: typeof LiveIndexRoute
 }
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/live/$streamId': {
+      id: '/live/$streamId'
+      path: '/live/$streamId'
+      fullPath: '/live/$streamId'
+      preLoaderRoute: typeof LiveStreamIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiscoverRoute: DiscoverRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
+  LiveStreamIdRoute: LiveStreamIdRoute,
   UUsernameRoute: UUsernameRoute,
   LiveIndexRoute: LiveIndexRoute,
 }
