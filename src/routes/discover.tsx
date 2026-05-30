@@ -38,15 +38,10 @@ async function fetchTrending() {
 }
 
 function DiscoverPage() {
-  const [q, setQ] = useState("");
   const { data } = useQuery({ queryKey: ["trending"], queryFn: fetchTrending });
 
-  const videos = (data?.videos ?? []).filter((v) => {
-    if (!q) return true;
-    const p = data?.profiles.get(v.creator_id);
-    const hay = `${v.caption} ${v.title} ${(v.tags ?? []).join(" ")} ${p?.username ?? ""}`.toLowerCase();
-    return hay.includes(q.toLowerCase());
-  });
+  const videos = data?.videos ?? [];
+
 
   return (
     <div className="min-h-[100dvh] pb-28">
