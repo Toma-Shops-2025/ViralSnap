@@ -51,7 +51,7 @@ function WatchLivePage() {
   const { data } = useQuery({ queryKey: ["stream", streamId], queryFn: () => fetchStream(streamId) });
   const stream = data?.stream;
   const creator = data?.creator;
-  const isOwner = user?.id === creator?.id;
+  const isOwner = !!user && user.id === creator?.id;
 
   // load history + realtime subscription
   useEffect(() => {
