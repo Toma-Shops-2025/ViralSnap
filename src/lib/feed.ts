@@ -71,9 +71,3 @@ export async function toggleLike(videoId: string, liked: boolean) {
   }
 }
 
-export async function registerView(videoId: string) {
-  await supabase.rpc("increment_view" as never).then(
-    () => {},
-    () => {},
-  );
-}
