@@ -111,17 +111,36 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
         </button>
       )}
 
-      {/* mute toggle */}
-      <button
-        onClick={onToggleMute}
-        className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur"
-      >
-        {muted ? (
-          <VolumeX className="h-4 w-4 text-white" />
-        ) : (
-          <Volume2 className="h-4 w-4 text-white" />
-        )}
-      </button>
+      {/* mute toggle + volume slider (top left) */}
+      <div className="absolute left-4 top-4 z-20 flex flex-col items-center gap-2 pt-[env(safe-area-inset-top)]">
+        <button
+          onClick={onToggleMute}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? (
+            <VolumeX className="h-4 w-4 text-white" />
+          ) : (
+            <Volume2 className="h-4 w-4 text-white" />
+          )}
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.01}
+          value={muted ? 0 : volume}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setVolume(v);
+            if (v > 0 && muted) onToggleMute();
+            if (v === 0 && !muted) onToggleMute();
+          }}
+          aria-label="Volume"
+          className="volume-slider h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-white/30 accent-primary"
+        />
+      </div>
+
 
       {/* right action rail */}
       <div className="absolute bottom-28 right-3 z-20 flex flex-col items-center gap-5 text-white">
