@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart, MessageCircle, Gift, Share2, Play, Volume2, VolumeX, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
