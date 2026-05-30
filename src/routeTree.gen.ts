@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as EarningsRouteImport } from './routes/earnings'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -29,6 +32,16 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EarningsRoute = EarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
@@ -42,6 +55,11 @@ const CampaignsRoute = CampaignsRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -67,9 +85,12 @@ const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -78,9 +99,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -90,9 +114,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/earnings': typeof EarningsRoute
+  '/search': typeof SearchRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -103,9 +130,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activity'
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -114,9 +144,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activity'
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -125,9 +158,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activity'
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/earnings'
+    | '/search'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -137,9 +173,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   CampaignsRoute: typeof CampaignsRoute
   DiscoverRoute: typeof DiscoverRoute
+  EarningsRoute: typeof EarningsRoute
+  SearchRoute: typeof SearchRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
@@ -163,6 +202,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/earnings': {
+      id: '/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof EarningsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/discover': {
       id: '/discover'
       path: '/discover'
@@ -182,6 +235,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -217,9 +277,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   CampaignsRoute: CampaignsRoute,
   DiscoverRoute: DiscoverRoute,
+  EarningsRoute: EarningsRoute,
+  SearchRoute: SearchRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,

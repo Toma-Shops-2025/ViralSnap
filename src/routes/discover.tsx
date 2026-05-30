@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { Search, Play, Heart, Radio, Briefcase } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
 import { compact } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
+
 
 export const Route = createFileRoute("/discover")({
   head: () => ({
@@ -39,30 +38,24 @@ async function fetchTrending() {
 }
 
 function DiscoverPage() {
-  const [q, setQ] = useState("");
   const { data } = useQuery({ queryKey: ["trending"], queryFn: fetchTrending });
 
-  const videos = (data?.videos ?? []).filter((v) => {
-    if (!q) return true;
-    const p = data?.profiles.get(v.creator_id);
-    const hay = `${v.caption} ${v.title} ${(v.tags ?? []).join(" ")} ${p?.username ?? ""}`.toLowerCase();
-    return hay.includes(q.toLowerCase());
-  });
+  const videos = data?.videos ?? [];
+
 
   return (
     <div className="min-h-[100dvh] pb-28">
       <header className="sticky top-0 z-30 space-y-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <h1 className="font-display text-2xl font-bold">Discover</h1>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search videos, creators, #tags"
-            className="rounded-full bg-card pl-9"
-          />
-        </div>
+        <Link
+          to="/search"
+          className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 text-sm text-muted-foreground"
+        >
+          <Search className="h-4 w-4" />
+          Search videos, creators, #tags
+        </Link>
       </header>
+
 
       <div className="mx-auto max-w-2xl px-1 py-2">
         <div className="mb-3 grid grid-cols-2 gap-2 px-1">

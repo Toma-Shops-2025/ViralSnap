@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Coins, TrendingUp, TrendingDown, Sparkles, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
@@ -43,9 +43,16 @@ function WalletPage() {
 
   return (
     <div className="min-h-[100dvh] pb-28">
-      <header className="px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+      <header className="flex items-center justify-between px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
         <h1 className="font-display text-2xl font-bold">Wallet</h1>
+        <Link
+          to="/earnings"
+          className="flex items-center gap-1 rounded-full border border-gold/40 bg-card px-3 py-1.5 text-sm font-semibold text-gold"
+        >
+          <TrendingUp className="h-4 w-4" /> Earnings
+        </Link>
       </header>
+
 
       <div className="mx-auto max-w-md space-y-6 px-4 py-4">
         {/* balance card */}

@@ -50,6 +50,30 @@ export async function fetchFeed(): Promise<FeedVideo[]> {
   return attachCreatorsAndLikes(data ?? []);
 }
 
+export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return [];
+
+  const { data: follows } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", auth.user.id);
+
+  const ids = (follows ?? []).map((f) => f.following_id);
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("videos")
+    .select("*")
+    .eq("status", "published")
+    .in("creator_id", ids)
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (error) throw error;
+  return attachCreatorsAndLikes(data ?? []);
+}
+
+
 export async function fetchCreatorVideos(creatorId: string): Promise<FeedVideo[]> {
   const { data, error } = await supabase
     .from("videos")
