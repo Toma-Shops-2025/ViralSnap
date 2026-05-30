@@ -26,6 +26,12 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
   const [likeCount, setLikeCount] = useState(video.like_count);
   const [showGift, setShowGift] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [volume, setVolume] = useState(1);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (el) el.volume = volume;
+  }, [volume, inView]);
 
   useEffect(() => {
     const el = containerRef.current;
