@@ -213,7 +213,7 @@ function RailButton({
   count,
   label,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   onClick: () => void;
   count?: number;
   label?: string;
