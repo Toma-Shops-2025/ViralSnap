@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { Search, Play, Heart, Radio, Briefcase } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
 import { compact } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
+
 
 export const Route = createFileRoute("/discover")({
   head: () => ({
