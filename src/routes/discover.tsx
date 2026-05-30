@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Search, Play, Heart } from "lucide-react";
+import { Search, Play, Heart, Radio, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,28 @@ function DiscoverPage() {
       </header>
 
       <div className="mx-auto max-w-2xl px-1 py-2">
+        <div className="mb-3 grid grid-cols-2 gap-2 px-1">
+          <Link
+            to="/live"
+            className="flex items-center gap-2 rounded-2xl bg-gradient-ember p-3 shadow-glow"
+          >
+            <Radio className="h-5 w-5 text-white" />
+            <div>
+              <p className="text-sm font-bold text-white">Live now</p>
+              <p className="text-[11px] text-white/80">Watch & gift</p>
+            </div>
+          </Link>
+          <Link
+            to="/campaigns"
+            className="flex items-center gap-2 rounded-2xl border border-gold/40 bg-card p-3"
+          >
+            <Briefcase className="h-5 w-5 text-gold" />
+            <div>
+              <p className="text-sm font-bold">Campaigns</p>
+              <p className="text-[11px] text-muted-foreground">Get paid</p>
+            </div>
+          </Link>
+        </div>
         <div className="grid grid-cols-3 gap-1">
           {videos.map((v) => {
             const p = data?.profiles.get(v.creator_id);

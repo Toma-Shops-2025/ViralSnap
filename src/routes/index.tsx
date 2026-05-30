@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Flame, Sparkles } from "lucide-react";
+import { Flame, Sparkles, Radio } from "lucide-react";
 import { fetchFeed } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
@@ -36,13 +36,20 @@ function FeedPage() {
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
       {/* top brand bar */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-center px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <div className="flex items-center gap-1.5">
+      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+        <span className="w-16" />
+        <div className="pointer-events-none flex items-center gap-1.5">
           <Flame className="h-5 w-5 text-primary drop-shadow" />
           <span className="font-display text-lg font-bold tracking-tight text-white drop-shadow">
             Viral<span className="text-gradient-fire">Snap</span>
           </span>
         </div>
+        <Link
+          to="/live"
+          className="flex w-16 items-center justify-end gap-1 text-xs font-bold uppercase text-white drop-shadow"
+        >
+          <Radio className="h-4 w-4 text-primary" /> Live
+        </Link>
       </header>
 
       {isLoading ? (
