@@ -11,10 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
-import { Route as LiveRouteImport } from './routes/live'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 
 const WalletRoute = WalletRouteImport.update({
@@ -25,11 +25,6 @@ const WalletRoute = WalletRouteImport.update({
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LiveRoute = LiveRouteImport.update({
-  id: '/live',
-  path: '/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscoverRoute = DiscoverRouteImport.update({
@@ -47,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LiveIndexRoute = LiveIndexRouteImport.update({
+  id: '/live/',
+  path: '/live/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -57,29 +57,29 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
-  '/live': typeof LiveRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/u/$username': typeof UUsernameRoute
+  '/live/': typeof LiveIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
-  '/live': typeof LiveRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/u/$username': typeof UUsernameRoute
+  '/live': typeof LiveIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/discover': typeof DiscoverRoute
-  '/live': typeof LiveRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/u/$username': typeof UUsernameRoute
+  '/live/': typeof LiveIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,38 +87,38 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/discover'
-    | '/live'
     | '/upload'
     | '/wallet'
     | '/u/$username'
+    | '/live/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/discover'
-    | '/live'
     | '/upload'
     | '/wallet'
     | '/u/$username'
+    | '/live'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/discover'
-    | '/live'
     | '/upload'
     | '/wallet'
     | '/u/$username'
+    | '/live/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DiscoverRoute: typeof DiscoverRoute
-  LiveRoute: typeof LiveRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
   UUsernameRoute: typeof UUsernameRoute
+  LiveIndexRoute: typeof LiveIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -135,13 +135,6 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/live': {
-      id: '/live'
-      path: '/live'
-      fullPath: '/live'
-      preLoaderRoute: typeof LiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discover': {
@@ -165,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/live/': {
+      id: '/live/'
+      path: '/live'
+      fullPath: '/live/'
+      preLoaderRoute: typeof LiveIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -179,10 +179,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DiscoverRoute: DiscoverRoute,
-  LiveRoute: LiveRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
   UUsernameRoute: UUsernameRoute,
+  LiveIndexRoute: LiveIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

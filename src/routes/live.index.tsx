@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { compact } from "@/lib/format";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/live")({
+export const Route = createFileRoute("/live/")({
   head: () => ({
     meta: [
       { title: "Live — ViralSnap" },
