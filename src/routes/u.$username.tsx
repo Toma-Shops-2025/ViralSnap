@@ -239,7 +239,24 @@ function ProfilePage() {
             </>
           )}
         </div>
+
+        {!isMe && (
+          <button
+            onClick={handleSupport}
+            className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 ${
+              isSupporting
+                ? "border border-primary/40 bg-card text-primary"
+                : "bg-gradient-ember text-white shadow-glow"
+            }`}
+          >
+            <HeartHandshake className="h-4 w-4" />
+            {isSupporting
+              ? "Supporting — manage"
+              : `Support ${SUPPORTER_PRICE_LABEL}`}
+          </button>
+        )}
       </header>
+
 
       <div className="mx-auto mt-6 max-w-2xl px-1">
         <div className="grid grid-cols-3 gap-1">
