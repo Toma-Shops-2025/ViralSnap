@@ -301,6 +301,16 @@ function ProfilePage() {
           receiverName={profile.username}
         />
       )}
+
+      <Dialog open={isOpen} onOpenChange={(o) => !o && closeCheckout()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Support {profile.display_name}</DialogTitle>
+          </DialogHeader>
+          {checkoutElement}
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
