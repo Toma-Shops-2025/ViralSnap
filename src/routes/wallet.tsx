@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Coins, TrendingUp, TrendingDown, Sparkles, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
 import { BottomNav } from "@/components/bottom-nav";
@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { timeAgo } from "@/lib/format";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({ meta: [{ title: "Wallet — ViralSnap" }] }),
@@ -14,11 +17,12 @@ export const Route = createFileRoute("/wallet")({
 });
 
 const PACKS = [
-  { coins: 500, price: "$4.99" },
-  { coins: 1200, price: "$9.99" },
-  { coins: 3000, price: "$19.99" },
-  { coins: 8000, price: "$49.99" },
+  { coins: 500, price: "$4.99", priceId: "coins_500" },
+  { coins: 1200, price: "$9.99", priceId: "coins_1200" },
+  { coins: 3000, price: "$19.99", priceId: "coins_3000" },
+  { coins: 8000, price: "$49.99", priceId: "coins_8000" },
 ];
+
 
 function WalletPage() {
   const { user, profile, loading } = useAuth();
