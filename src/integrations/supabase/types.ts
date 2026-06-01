@@ -139,6 +139,36 @@ export type Database = {
           },
         ]
       }
+      coin_purchases: {
+        Row: {
+          amount_cents: number
+          coins: number
+          created_at: string
+          id: string
+          status: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          coins: number
+          created_at?: string
+          id?: string
+          status?: string
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          status?: string
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coin_transactions: {
         Row: {
           amount: number
@@ -794,6 +824,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      credit_coin_purchase: {
+        Args: {
+          _amount_cents: number
+          _coins: number
+          _session_id: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
