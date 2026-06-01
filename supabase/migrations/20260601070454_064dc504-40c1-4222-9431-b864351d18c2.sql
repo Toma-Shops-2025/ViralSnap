@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.credit_coin_purchase(uuid, integer, integer, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.credit_coin_purchase(uuid, integer, integer, text) TO service_role;
