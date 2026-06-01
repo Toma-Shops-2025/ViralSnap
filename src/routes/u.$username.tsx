@@ -124,6 +124,23 @@ function ProfilePage() {
     queryClient.invalidateQueries({ queryKey: ["profile", username] });
   };
 
+  // Handle return from supporter subscription checkout.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("support") === "success") {
+      toast.success("Thanks for supporting!", {
+        description: "Your monthly support is now active.",
+      });
+      const t = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["is-supporting"] });
+      }, 2500);
+      window.history.replaceState({}, "", window.location.pathname);
+      return () => clearTimeout(t);
+    }
+  }, [queryClient]);
+
+
   if (isLoading) {
     return <div className="flex min-h-[100dvh] items-center justify-center text-muted-foreground">Loading…</div>;
   }
