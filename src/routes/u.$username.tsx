@@ -1,12 +1,16 @@
 import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Play, Heart, Settings, LogOut, Gift, Flame } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { GiftDialog } from "@/components/gift-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { getStripeEnvironment } from "@/lib/stripe";
+import { SUPPORTER_PRICE_LABEL } from "@/lib/subscriptions";
 import { compact } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -61,13 +65,46 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showGift, setShowGift] = useState(false);
+  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   const { data, isLoading } = useQuery({
     queryKey: ["profile", username, user?.id],
     queryFn: () => fetchProfileData(username, user?.id),
   });
 
+  const creatorId = data?.profile.id;
+
+  // Is the viewer already supporting this creator?
+  const { data: isSupporting } = useQuery({
+    queryKey: ["is-supporting", user?.id, creatorId],
+    enabled: !!user && !!creatorId,
+    queryFn: async () => {
+      const { data: sub } = await supabase
+        .from("creator_subscriptions")
+        .select("id")
+        .eq("subscriber_id", user!.id)
+        .eq("creator_id", creatorId!)
+        .eq("environment", getStripeEnvironment())
+        .in("status", ["active", "trialing"])
+        .maybeSingle();
+      return !!sub;
+    },
+  });
+
   const isMe = myProfile?.username === username;
+
+  const handleSupport = () => {
+    if (!user) return navigate({ to: "/auth" });
+    if (!creatorId) return;
+    if (isSupporting) return navigate({ to: "/settings" });
+    openCheckout({
+      creatorId,
+      userId: user.id,
+      customerEmail: user.email ?? undefined,
+      returnUrl: `${window.location.origin}/u/${username}?support=success`,
+    });
+  };
+
 
   const handleFollow = async () => {
     if (!user) return navigate({ to: "/auth" });
@@ -86,6 +123,23 @@ function ProfilePage() {
     }
     queryClient.invalidateQueries({ queryKey: ["profile", username] });
   };
+
+  // Handle return from supporter subscription checkout.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("support") === "success") {
+      toast.success("Thanks for supporting!", {
+        description: "Your monthly support is now active.",
+      });
+      const t = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["is-supporting"] });
+      }, 2500);
+      window.history.replaceState({}, "", window.location.pathname);
+      return () => clearTimeout(t);
+    }
+  }, [queryClient]);
+
 
   if (isLoading) {
     return <div className="flex min-h-[100dvh] items-center justify-center text-muted-foreground">Loading…</div>;
@@ -185,7 +239,24 @@ function ProfilePage() {
             </>
           )}
         </div>
+
+        {!isMe && (
+          <button
+            onClick={handleSupport}
+            className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 ${
+              isSupporting
+                ? "border border-primary/40 bg-card text-primary"
+                : "bg-gradient-ember text-white shadow-glow"
+            }`}
+          >
+            <HeartHandshake className="h-4 w-4" />
+            {isSupporting
+              ? "Supporting — manage"
+              : `Support ${SUPPORTER_PRICE_LABEL}`}
+          </button>
+        )}
       </header>
+
 
       <div className="mx-auto mt-6 max-w-2xl px-1">
         <div className="grid grid-cols-3 gap-1">
@@ -230,6 +301,16 @@ function ProfilePage() {
           receiverName={profile.username}
         />
       )}
+
+      <Dialog open={isOpen} onOpenChange={(o) => !o && closeCheckout()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Support {profile.display_name}</DialogTitle>
+          </DialogHeader>
+          {checkoutElement}
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
