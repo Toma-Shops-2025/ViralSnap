@@ -133,11 +133,7 @@ function WalletPage() {
             {PACKS.map((p) => (
               <button
                 key={p.coins}
-                onClick={() =>
-                  toast("Payments coming soon", {
-                    description: "Coin purchases launch with checkout. You start with 500 free coins!",
-                  })
-                }
+                onClick={() => handleBuy(p.priceId)}
                 className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-gold/60"
               >
                 <Sparkles className="h-5 w-5 text-gold" />
@@ -148,6 +144,7 @@ function WalletPage() {
                 </span>
               </button>
             ))}
+
           </div>
         </div>
 
