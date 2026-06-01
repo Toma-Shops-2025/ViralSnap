@@ -93,7 +93,8 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
         customer: customerId,
         // Full end-to-end compliance handling: Stripe calculates, collects,
         // files and remits tax, plus fraud/dispute/support coverage.
-        managed_payments: { enabled: true },
+        // `managed_payments` is newer than the pinned SDK types, so cast.
+        ...({ managed_payments: { enabled: true } } as object),
         payment_intent_data: { description: product.name },
         metadata: {
           userId,
@@ -101,7 +102,7 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
           priceId: data.priceId,
           managed_payments: "true",
         },
-      });
+      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
