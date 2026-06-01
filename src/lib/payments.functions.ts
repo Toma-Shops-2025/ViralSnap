@@ -91,12 +91,15 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        automatic_tax: { enabled: true },
+        // Full end-to-end compliance handling: Stripe calculates, collects,
+        // files and remits tax, plus fraud/dispute/support coverage.
+        managed_payments: { enabled: true },
         payment_intent_data: { description: product.name },
         metadata: {
           userId,
           coins: String(coins),
           priceId: data.priceId,
+          managed_payments: "true",
         },
       });
 
