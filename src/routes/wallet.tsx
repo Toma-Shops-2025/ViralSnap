@@ -25,12 +25,47 @@ const PACKS = [
 
 
 function WalletPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
   }, [loading, user, navigate]);
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      toast.success("Payment complete!", {
+        description: "Your ViralCoins are being added to your balance.",
+      });
+      // Coins are credited by the webhook; refresh shortly after.
+      const refresh = () => {
+        refreshProfile();
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      };
+      refresh();
+      const t = setTimeout(refresh, 2500);
+      window.history.replaceState({}, "", "/wallet");
+      return () => clearTimeout(t);
+    }
+  }, [refreshProfile, queryClient]);
+
+  const handleBuy = (priceId: string) => {
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    openCheckout({
+      priceId,
+      customerEmail: user.email ?? undefined,
+      userId: user.id,
+      returnUrl: `${window.location.origin}/wallet?checkout=success`,
+    });
+  };
 
   const { data: txns = [] } = useQuery({
     queryKey: ["transactions", user?.id],
@@ -47,7 +82,9 @@ function WalletPage() {
 
   return (
     <div className="min-h-[100dvh] pb-28">
+      <PaymentTestModeBanner />
       <header className="flex items-center justify-between px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+
         <h1 className="font-display text-2xl font-bold">Wallet</h1>
         <Link
           to="/earnings"
