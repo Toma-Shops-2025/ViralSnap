@@ -249,6 +249,54 @@ export type Database = {
           },
         ]
       }
+      creator_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          creator_id: string
+          current_period_end: string | null
+          environment: string
+          id: string
+          monthly_coins: number
+          price_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscriber_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          creator_id: string
+          current_period_end?: string | null
+          environment?: string
+          id?: string
+          monthly_coins?: number
+          price_id: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscriber_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          creator_id?: string
+          current_period_end?: string | null
+          environment?: string
+          id?: string
+          monthly_coins?: number
+          price_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          subscriber_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -578,6 +626,39 @@ export type Database = {
           },
         ]
       }
+      payout_requests: {
+        Row: {
+          amount_cents: number
+          coins: number
+          created_at: string
+          id: string
+          processed_at: string | null
+          status: string
+          stripe_transfer_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          coins: number
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_transfer_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          stripe_transfer_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age_verified: boolean
@@ -587,6 +668,8 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          payouts_enabled: boolean
+          stripe_connect_account_id: string | null
           total_earned: number
           total_spent: number
           username: string
@@ -599,6 +682,8 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          payouts_enabled?: boolean
+          stripe_connect_account_id?: string | null
           total_earned?: number
           total_spent?: number
           username: string
@@ -611,6 +696,8 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          payouts_enabled?: boolean
+          stripe_connect_account_id?: string | null
           total_earned?: number
           total_spent?: number
           username?: string
@@ -657,6 +744,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_payments: {
+        Row: {
+          amount_cents: number
+          coins: number
+          created_at: string
+          creator_id: string
+          id: string
+          stripe_invoice_id: string
+          subscriber_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          coins: number
+          created_at?: string
+          creator_id: string
+          id?: string
+          stripe_invoice_id: string
+          subscriber_id: string
+        }
+        Update: {
+          amount_cents?: number
+          coins?: number
+          created_at?: string
+          creator_id?: string
+          id?: string
+          stripe_invoice_id?: string
+          subscriber_id?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
@@ -833,6 +950,16 @@ export type Database = {
         }
         Returns: Json
       }
+      credit_subscription_invoice: {
+        Args: {
+          _amount_cents: number
+          _coins: number
+          _creator_id: string
+          _invoice_id: string
+          _subscriber_id: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -865,6 +992,8 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refund_payout: { Args: { _request_id: string }; Returns: undefined }
+      request_payout: { Args: { _coins: number }; Returns: Json }
       send_gift: {
         Args: {
           _coin_amount: number
