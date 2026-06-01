@@ -196,6 +196,15 @@ function WalletPage() {
         </div>
       </div>
 
+      <Dialog open={isOpen} onOpenChange={(o) => !o && closeCheckout()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Buy ViralCoins</DialogTitle>
+          </DialogHeader>
+          {checkoutElement}
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
