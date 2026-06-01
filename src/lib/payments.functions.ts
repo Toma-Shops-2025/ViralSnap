@@ -110,3 +110,98 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
     }
   });
 
+// Coins a creator earns each successful monthly supporter payment.
+const SUPPORTER_MONTHLY_COINS = 350;
+const SUPPORTER_PRICE_ID = "creator_supporter_monthly";
+
+// ============ Creator supporter subscription (recurring) ============
+export const createSupporterCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: {
+      creatorId: string;
+      customerEmail?: string;
+      returnUrl: string;
+      environment: StripeEnv;
+    }) => {
+      if (!/^[0-9a-fA-F-]{36}$/.test(data.creatorId)) throw new Error("Invalid creator");
+      return data;
+    },
+  )
+  .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
+    try {
+      const subscriberId = context.userId;
+      if (subscriberId === data.creatorId) {
+        return { error: "You can't subscribe to yourself." };
+      }
+      const stripe = createStripeClient(data.environment);
+
+      const prices = await stripe.prices.list({ lookup_keys: [SUPPORTER_PRICE_ID] });
+      if (!prices.data.length) throw new Error("Subscription price not found");
+      const stripePrice = prices.data[0];
+
+      const customerId = await resolveOrCreateCustomer(stripe, {
+        email: data.customerEmail,
+        userId: subscriberId,
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        line_items: [{ price: stripePrice.id, quantity: 1 }],
+        mode: "subscription",
+        ui_mode: "embedded_page",
+        return_url: data.returnUrl,
+        customer: customerId,
+        ...({ managed_payments: { enabled: true } } as object),
+        metadata: {
+          userId: subscriberId,
+          creatorId: data.creatorId,
+          coins: String(SUPPORTER_MONTHLY_COINS),
+          managed_payments: "true",
+        },
+        subscription_data: {
+          metadata: {
+            userId: subscriberId,
+            creatorId: data.creatorId,
+            coins: String(SUPPORTER_MONTHLY_COINS),
+          },
+        },
+      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
+
+      return { clientSecret: session.client_secret ?? "" };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });
+
+type PortalResult = { url: string } | { error: string };
+
+// Opens the Stripe billing portal so a subscriber can manage/cancel.
+export const createSubscriptionPortalSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { returnUrl?: string; environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<PortalResult> => {
+    const { supabase, userId } = context;
+    const { data: sub } = await supabase
+      .from("creator_subscriptions")
+      .select("stripe_customer_id")
+      .eq("subscriber_id", userId)
+      .eq("environment", data.environment)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!sub?.stripe_customer_id) return { error: "No subscription found." };
+
+    try {
+      const stripe = createStripeClient(data.environment);
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: sub.stripe_customer_id as string,
+        ...(data.returnUrl && { return_url: data.returnUrl }),
+      });
+      return { url: portal.url };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });
+
+
