@@ -91,14 +91,18 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        automatic_tax: { enabled: true },
+        // Full end-to-end compliance handling: Stripe calculates, collects,
+        // files and remits tax, plus fraud/dispute/support coverage.
+        // `managed_payments` is newer than the pinned SDK types, so cast.
+        ...({ managed_payments: { enabled: true } } as object),
         payment_intent_data: { description: product.name },
         metadata: {
           userId,
           coins: String(coins),
           priceId: data.priceId,
+          managed_payments: "true",
         },
-      });
+      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {

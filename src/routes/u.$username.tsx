@@ -121,7 +121,12 @@ function ProfilePage() {
           )}
           {isMe && (
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="rounded-full border-border bg-card">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate({ to: "/settings" })}
+                className="rounded-full border-border bg-card"
+              >
                 <Settings className="h-4 w-4" />
               </Button>
               <Button
