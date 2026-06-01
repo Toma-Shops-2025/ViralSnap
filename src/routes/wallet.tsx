@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Coins, TrendingUp, TrendingDown, Sparkles, ArrowUpRight, ArrowDownLeft, Gift } from "lucide-react";
 import { BottomNav } from "@/components/bottom-nav";
@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { timeAgo } from "@/lib/format";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({ meta: [{ title: "Wallet — ViralSnap" }] }),
@@ -14,19 +17,55 @@ export const Route = createFileRoute("/wallet")({
 });
 
 const PACKS = [
-  { coins: 500, price: "$4.99" },
-  { coins: 1200, price: "$9.99" },
-  { coins: 3000, price: "$19.99" },
-  { coins: 8000, price: "$49.99" },
+  { coins: 500, price: "$4.99", priceId: "coins_500" },
+  { coins: 1200, price: "$9.99", priceId: "coins_1200" },
+  { coins: 3000, price: "$19.99", priceId: "coins_3000" },
+  { coins: 8000, price: "$49.99", priceId: "coins_8000" },
 ];
 
+
 function WalletPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
   }, [loading, user, navigate]);
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      toast.success("Payment complete!", {
+        description: "Your ViralCoins are being added to your balance.",
+      });
+      // Coins are credited by the webhook; refresh shortly after.
+      const refresh = () => {
+        refreshProfile();
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      };
+      refresh();
+      const t = setTimeout(refresh, 2500);
+      window.history.replaceState({}, "", "/wallet");
+      return () => clearTimeout(t);
+    }
+  }, [refreshProfile, queryClient]);
+
+  const handleBuy = (priceId: string) => {
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    openCheckout({
+      priceId,
+      customerEmail: user.email ?? undefined,
+      userId: user.id,
+      returnUrl: `${window.location.origin}/wallet?checkout=success`,
+    });
+  };
 
   const { data: txns = [] } = useQuery({
     queryKey: ["transactions", user?.id],
@@ -43,7 +82,9 @@ function WalletPage() {
 
   return (
     <div className="min-h-[100dvh] pb-28">
+      <PaymentTestModeBanner />
       <header className="flex items-center justify-between px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+
         <h1 className="font-display text-2xl font-bold">Wallet</h1>
         <Link
           to="/earnings"
@@ -92,11 +133,7 @@ function WalletPage() {
             {PACKS.map((p) => (
               <button
                 key={p.coins}
-                onClick={() =>
-                  toast("Payments coming soon", {
-                    description: "Coin purchases launch with checkout. You start with 500 free coins!",
-                  })
-                }
+                onClick={() => handleBuy(p.priceId)}
                 className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-gold/60"
               >
                 <Sparkles className="h-5 w-5 text-gold" />
@@ -107,6 +144,7 @@ function WalletPage() {
                 </span>
               </button>
             ))}
+
           </div>
         </div>
 
@@ -157,6 +195,15 @@ function WalletPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isOpen} onOpenChange={(o) => !o && closeCheckout()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Buy ViralCoins</DialogTitle>
+          </DialogHeader>
+          {checkoutElement}
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
