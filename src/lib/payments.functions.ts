@@ -50,22 +50,23 @@ async function resolveOrCreateCustomer(
 }
 
 export const createCoinCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (data: {
       priceId: string;
       customerEmail?: string;
-      userId: string;
+      userId?: string;
       returnUrl: string;
       environment: StripeEnv;
     }) => {
       if (!/^[a-zA-Z0-9_-]+$/.test(data.priceId)) throw new Error("Invalid priceId");
       if (!COIN_PACKS[data.priceId]) throw new Error("Unknown coin pack");
-      if (!/^[a-zA-Z0-9_-]+$/.test(data.userId)) throw new Error("Invalid userId");
       return data;
     },
   )
-  .handler(async ({ data }): Promise<CheckoutSessionResult> => {
+  .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
     try {
+      const userId = context.userId;
       const stripe = createStripeClient(data.environment);
       const coins = COIN_PACKS[data.priceId];
 
@@ -75,7 +76,7 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
 
       const customerId = await resolveOrCreateCustomer(stripe, {
         email: data.customerEmail,
-        userId: data.userId,
+        userId,
       });
 
       const productId =
@@ -93,7 +94,7 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
         automatic_tax: { enabled: true },
         payment_intent_data: { description: product.name },
         metadata: {
-          userId: data.userId,
+          userId,
           coins: String(coins),
           priceId: data.priceId,
         },
@@ -104,3 +105,4 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
       return { error: getStripeErrorMessage(error) };
     }
   });
+
