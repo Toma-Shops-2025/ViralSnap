@@ -65,13 +65,46 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showGift, setShowGift] = useState(false);
+  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   const { data, isLoading } = useQuery({
     queryKey: ["profile", username, user?.id],
     queryFn: () => fetchProfileData(username, user?.id),
   });
 
+  const creatorId = data?.profile.id;
+
+  // Is the viewer already supporting this creator?
+  const { data: isSupporting } = useQuery({
+    queryKey: ["is-supporting", user?.id, creatorId],
+    enabled: !!user && !!creatorId,
+    queryFn: async () => {
+      const { data: sub } = await supabase
+        .from("creator_subscriptions")
+        .select("id")
+        .eq("subscriber_id", user!.id)
+        .eq("creator_id", creatorId!)
+        .eq("environment", getStripeEnvironment())
+        .in("status", ["active", "trialing"])
+        .maybeSingle();
+      return !!sub;
+    },
+  });
+
   const isMe = myProfile?.username === username;
+
+  const handleSupport = () => {
+    if (!user) return navigate({ to: "/auth" });
+    if (!creatorId) return;
+    if (isSupporting) return navigate({ to: "/settings" });
+    openCheckout({
+      creatorId,
+      userId: user.id,
+      customerEmail: user.email ?? undefined,
+      returnUrl: `${window.location.origin}/u/${username}?support=success`,
+    });
+  };
+
 
   const handleFollow = async () => {
     if (!user) return navigate({ to: "/auth" });
