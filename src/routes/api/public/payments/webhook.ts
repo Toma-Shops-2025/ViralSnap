@@ -23,12 +23,12 @@ async function handleCheckoutCompleted(session: any) {
     return;
   }
 
-  const { error } = await getSupabase().rpc("credit_coin_purchase", {
+  const { error } = await getSupabase().rpc("credit_coin_purchase" as never, {
     _user_id: userId,
     _coins: coins,
     _amount_cents: session.amount_total ?? 0,
     _session_id: session.id,
-  });
+  } as never);
 
   if (error) {
     console.error("Failed to credit coins:", error);
