@@ -1,12 +1,16 @@
 import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Play, Heart, Settings, LogOut, Gift, Flame } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { GiftDialog } from "@/components/gift-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { getStripeEnvironment } from "@/lib/stripe";
+import { SUPPORTER_PRICE_LABEL } from "@/lib/subscriptions";
 import { compact } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
