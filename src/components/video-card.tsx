@@ -103,15 +103,16 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
     >
       <video
         ref={videoRef}
-        src={video.media_url}
+        src={nearView ? video.media_url : undefined}
         poster={video.cover_url ?? undefined}
         loop
         muted={muted}
         playsInline
-        preload="metadata"
+        preload={nearView ? "auto" : "none"}
         onClick={() => setPaused((p) => !p)}
         className="absolute inset-0 h-full w-full object-cover"
       />
+
 
       {/* dark gradient for legibility */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
