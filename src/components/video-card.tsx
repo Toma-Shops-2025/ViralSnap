@@ -128,7 +128,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
       )}
 
       {/* mute toggle + volume slider (top left) */}
-      <div className="absolute left-4 top-4 z-20 flex flex-col items-center gap-2 pt-[env(safe-area-inset-top)]">
+      <div className="absolute left-2 top-4 z-20 flex flex-col items-center gap-2 pt-[env(safe-area-inset-top)]">
         <button
           onClick={onToggleMute}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur"
@@ -153,7 +153,9 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
             if (v === 0 && !muted) onToggleMute();
           }}
           aria-label="Volume"
-          className="volume-slider h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-white/30 accent-primary"
+          orient="vertical"
+          style={{ WebkitAppearance: "slider-vertical" }}
+          className="volume-slider h-20 w-1.5 cursor-pointer accent-primary"
         />
       </div>
 
