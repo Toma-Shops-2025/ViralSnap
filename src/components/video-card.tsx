@@ -153,7 +153,6 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
             if (v === 0 && !muted) onToggleMute();
           }}
           aria-label="Volume"
-          orient="vertical"
           style={{ WebkitAppearance: "slider-vertical" }}
           className="volume-slider h-20 w-1.5 cursor-pointer accent-primary"
         />
