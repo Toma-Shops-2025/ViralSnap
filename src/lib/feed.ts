@@ -9,6 +9,16 @@ export type FeedVideo = VideoRow & {
   liked: boolean;
 };
 
+/** Fisher–Yates shuffle (returns a new array, does not mutate input). */
+export function shuffle<T>(input: T[]): T[] {
+  const arr = [...input];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> {
   if (videos.length === 0) return [];
   const creatorIds = [...new Set(videos.map((v) => v.creator_id))];
@@ -47,7 +57,7 @@ export async function fetchFeed(): Promise<FeedVideo[]> {
     .order("created_at", { ascending: false })
     .limit(40);
   if (error) throw error;
-  return attachCreatorsAndLikes(data ?? []);
+  return shuffle(await attachCreatorsAndLikes(data ?? []));
 }
 
 export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
@@ -70,7 +80,7 @@ export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
     .order("created_at", { ascending: false })
     .limit(40);
   if (error) throw error;
-  return attachCreatorsAndLikes(data ?? []);
+  return shuffle(await attachCreatorsAndLikes(data ?? []));
 }
 
 

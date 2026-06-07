@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Flame, Sparkles, Radio, Bell } from "lucide-react";
-import { fetchFeed, fetchFollowingFeed } from "@/lib/feed";
+import { fetchFeed, fetchFollowingFeed, shuffle, type FeedVideo } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +40,45 @@ function FeedPage() {
     queryFn: tab === "following" ? fetchFollowingFeed : fetchFeed,
   });
 
+  // Never-ending feed: append reshuffled cycles of the loaded clips as the
+  // viewer nears the end, so the scroll feels infinite.
+  const [extraPages, setExtraPages] = useState<FeedVideo[][]>([]);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setExtraPages([]);
+  }, [videos]);
+
+  const loadMore = useCallback(() => {
+    setExtraPages((pages) => {
+      if (!videos || videos.length === 0) return pages;
+      if (pages.length >= 50) return pages; // hard safety cap
+      return [...pages, shuffle(videos)];
+    });
+  }, [videos]);
+
+  const items = useMemo(() => {
+    if (!videos) return [] as { video: FeedVideo; key: string }[];
+    return [videos, ...extraPages].flatMap((page, ci) =>
+      page.map((v) => ({ video: v, key: `${v.id}-${ci}` })),
+    );
+  }, [videos, extraPages]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !videos || videos.length === 0) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "0px 0px 300% 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [videos, loadMore, items.length]);
+
+
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
       {/* top brand bar */}
@@ -76,14 +115,15 @@ function FeedPage() {
         </div>
       ) : videos && videos.length > 0 ? (
         <div className="h-full snap-y-mandatory overflow-y-scroll no-scrollbar">
-          {videos.map((v) => (
+          {items.map(({ video, key }) => (
             <VideoCard
-              key={v.id}
-              video={v}
+              key={key}
+              video={video}
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
             />
           ))}
+          <div ref={sentinelRef} className="h-px w-full" aria-hidden />
         </div>
       ) : tab === "following" ? (
         <EmptyFollowing signedIn={!!user} />
