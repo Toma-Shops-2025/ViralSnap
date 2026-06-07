@@ -128,7 +128,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
       )}
 
       {/* mute toggle + volume slider (top left) */}
-      <div className="absolute left-2 top-4 z-20 flex flex-col items-center gap-2 pt-[env(safe-area-inset-top)]">
+      <div className="absolute left-2 top-[calc(4rem+env(safe-area-inset-top))] z-20 flex flex-col items-center gap-2">
         <button
           onClick={onToggleMute}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 backdrop-blur"
