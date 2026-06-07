@@ -21,6 +21,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [inView, setInView] = useState(false);
+  const [nearView, setNearView] = useState(false);
   const [paused, setPaused] = useState(false);
   const [liked, setLiked] = useState(video.liked);
   const [likeCount, setLikeCount] = useState(video.like_count);
@@ -33,26 +34,40 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
     if (el) el.volume = volume;
   }, [volume, inView]);
 
+  // Two observers: one to preload nearby clips, one to decide playback.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
+
+    const playObserver = new IntersectionObserver(
       ([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio > 0.6),
       { threshold: [0, 0.6, 1] },
     );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const nearObserver = new IntersectionObserver(
+      ([entry]) => setNearView(entry.isIntersecting),
+      { rootMargin: "250% 0px" },
+    );
+
+    playObserver.observe(el);
+    nearObserver.observe(el);
+    return () => {
+      playObserver.disconnect();
+      nearObserver.disconnect();
+    };
   }, []);
 
+  // Drive playback off the active clip only, guarding against play/pause races.
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     if (inView && !paused) {
-      el.play().catch(() => {});
-    } else {
+      const p = el.play();
+      if (p) p.catch(() => {});
+    } else if (!el.paused) {
       el.pause();
     }
-  }, [inView, paused]);
+  }, [inView, paused, nearView]);
+
 
   const handleLike = async () => {
     if (!user) return navigate({ to: "/auth" });
