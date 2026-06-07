@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart, MessageCircle, Gift, Share2, Play, Volume2, VolumeX, ShoppingBag } from "lucide-react";
+import Hls from "hls.js";
 import { cn } from "@/lib/utils";
 import { compact } from "@/lib/format";
 import { toggleLike, type FeedVideo } from "@/lib/feed";
@@ -8,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { GiftDialog } from "@/components/gift-dialog";
 import { CommentsSheet } from "@/components/comments-sheet";
 import { toast } from "sonner";
+import { getVideoAssetStatus, getVideoPlaybackUrl, getVideoPosterUrl, isAdaptiveStream } from "@/lib/video";
 
 type Props = {
   video: FeedVideo;
@@ -28,11 +30,46 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
   const [showGift, setShowGift] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [volume, setVolume] = useState(1);
+  const playbackUrl = useMemo(() => getVideoPlaybackUrl(video), [video]);
+  const posterUrl = useMemo(() => getVideoPosterUrl(video), [video]);
+  const adaptive = useMemo(() => isAdaptiveStream(video), [video]);
+  const assetReady = getVideoAssetStatus(video) !== "errored";
 
   useEffect(() => {
     const el = videoRef.current;
     if (el) el.volume = volume;
   }, [volume, inView]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !nearView || !assetReady) return;
+
+    if (adaptive) {
+      if (el.canPlayType("application/vnd.apple.mpegurl")) {
+        if (el.src !== playbackUrl) {
+          el.src = playbackUrl;
+          el.load();
+        }
+        return;
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          maxBufferLength: 20,
+          backBufferLength: 60,
+        });
+        hls.loadSource(playbackUrl);
+        hls.attachMedia(el);
+        return () => hls.destroy();
+      }
+    }
+
+    if (el.src !== playbackUrl) {
+      el.src = playbackUrl;
+      el.load();
+    }
+  }, [adaptive, assetReady, nearView, playbackUrl]);
 
   // Two observers: one to preload nearby clips, one to decide playback.
   useEffect(() => {
@@ -103,12 +140,11 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
     >
       <video
         ref={videoRef}
-        src={nearView ? video.media_url : undefined}
-        poster={video.cover_url ?? undefined}
+        poster={posterUrl ?? undefined}
         loop
         muted={muted}
         playsInline
-        preload={nearView ? "auto" : "none"}
+        preload={nearView ? "metadata" : "none"}
         onClick={() => setPaused((p) => !p)}
         className="absolute inset-0 h-full w-full object-cover"
       />

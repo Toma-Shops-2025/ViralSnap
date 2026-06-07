@@ -1,13 +1,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
-export type VideoRow = Tables<"videos">;
+export type VideoRow = Tables<"videos"> & {
+  mux_asset_id?: string | null;
+  mux_asset_status?: string | null;
+  mux_playback_id?: string | null;
+};
 export type ProfileRow = Tables<"profiles">;
 
 export type FeedVideo = VideoRow & {
   creator: Pick<ProfileRow, "id" | "username" | "display_name" | "avatar_url"> | null;
   liked: boolean;
 };
+
+export type FeedPage = {
+  items: FeedVideo[];
+  hasMore: boolean;
+  page: number;
+};
+
+const FEED_PAGE_SIZE = 12;
 
 /** Fisher–Yates shuffle (returns a new array, does not mutate input). */
 export function shuffle<T>(input: T[]): T[] {
@@ -49,20 +61,26 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
   }));
 }
 
-export async function fetchFeed(): Promise<FeedVideo[]> {
+export async function fetchFeedPage(page = 0): Promise<FeedPage> {
+  const from = page * FEED_PAGE_SIZE;
+  const to = from + FEED_PAGE_SIZE - 1;
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
     .order("created_at", { ascending: false })
-    .limit(40);
+    .range(from, to);
   if (error) throw error;
-  return shuffle(await attachCreatorsAndLikes(data ?? []));
+  return {
+    items: shuffle(await attachCreatorsAndLikes((data ?? []) as VideoRow[])),
+    hasMore: (data ?? []).length === FEED_PAGE_SIZE,
+    page,
+  };
 }
 
-export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
+export async function fetchFollowingFeedPage(page = 0): Promise<FeedPage> {
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return [];
+  if (!auth.user) return { items: [], hasMore: false, page };
 
   const { data: follows } = await supabase
     .from("follows")
@@ -70,7 +88,10 @@ export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
     .eq("follower_id", auth.user.id);
 
   const ids = (follows ?? []).map((f) => f.following_id);
-  if (ids.length === 0) return [];
+  if (ids.length === 0) return { items: [], hasMore: false, page };
+
+  const from = page * FEED_PAGE_SIZE;
+  const to = from + FEED_PAGE_SIZE - 1;
 
   const { data, error } = await supabase
     .from("videos")
@@ -78,9 +99,13 @@ export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
     .eq("status", "published")
     .in("creator_id", ids)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .range(from, to);
   if (error) throw error;
-  return shuffle(await attachCreatorsAndLikes(data ?? []));
+  return {
+    items: shuffle(await attachCreatorsAndLikes((data ?? []) as VideoRow[])),
+    hasMore: (data ?? []).length === FEED_PAGE_SIZE,
+    page,
+  };
 }
 
 
