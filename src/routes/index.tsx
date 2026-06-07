@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Sparkles, Radio, Bell } from "lucide-react";
-import { fetchFeed, fetchFollowingFeed, shuffle, type FeedVideo } from "@/lib/feed";
+import { fetchFeedPage, fetchFollowingFeedPage, type FeedVideo } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,47 +35,37 @@ function FeedPage() {
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
-  const { data: videos, isLoading } = useQuery({
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["feed", tab, user?.id],
-    queryFn: tab === "following" ? fetchFollowingFeed : fetchFeed,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam),
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
   });
 
-  // Never-ending feed: append reshuffled cycles of the loaded clips as the
-  // viewer nears the end, so the scroll feels infinite.
-  const [extraPages, setExtraPages] = useState<FeedVideo[][]>([]);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setExtraPages([]);
-  }, [videos]);
-
-  const loadMore = useCallback(() => {
-    setExtraPages((pages) => {
-      if (!videos || videos.length === 0) return pages;
-      if (pages.length >= 50) return pages; // hard safety cap
-      return [...pages, shuffle(videos)];
-    });
-  }, [videos]);
-
   const items = useMemo(() => {
-    if (!videos) return [] as { video: FeedVideo; key: string }[];
-    return [videos, ...extraPages].flatMap((page, ci) =>
-      page.map((v) => ({ video: v, key: `${v.id}-${ci}` })),
+    const pages = data?.pages ?? [];
+    return pages.flatMap((page, pageIndex) =>
+      page.items.map((video) => ({ video, key: `${video.id}-${pageIndex}` })),
     );
-  }, [videos, extraPages]);
+  }, [data]);
 
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el || !videos || videos.length === 0) return;
+    if (!el || items.length === 0 || !hasNextPage) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) loadMore();
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
       },
-      { rootMargin: "0px 0px 300% 0px" },
+      { rootMargin: "0px 0px 200% 0px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [videos, loadMore, items.length]);
+  }, [items.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 
 
@@ -113,7 +103,7 @@ function FeedPage() {
         <div className="flex h-full items-center justify-center">
           <Skeleton className="h-full w-full bg-secondary/40" />
         </div>
-      ) : videos && videos.length > 0 ? (
+      ) : items.length > 0 ? (
         <div className="h-full snap-y-mandatory overflow-y-scroll no-scrollbar">
           {items.map(({ video, key }) => (
             <VideoCard
@@ -124,6 +114,7 @@ function FeedPage() {
             />
           ))}
           <div ref={sentinelRef} className="h-px w-full" aria-hidden />
+          {isFetchingNextPage && <div className="h-20 w-full bg-black" aria-hidden />}
         </div>
       ) : tab === "following" ? (
         <EmptyFollowing signedIn={!!user} />
