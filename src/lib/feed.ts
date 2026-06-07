@@ -80,7 +80,7 @@ export async function fetchFollowingFeed(): Promise<FeedVideo[]> {
     .order("created_at", { ascending: false })
     .limit(40);
   if (error) throw error;
-  return attachCreatorsAndLikes(data ?? []);
+  return shuffle(await attachCreatorsAndLikes(data ?? []));
 }
 
 
