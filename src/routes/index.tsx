@@ -115,14 +115,15 @@ function FeedPage() {
         </div>
       ) : videos && videos.length > 0 ? (
         <div className="h-full snap-y-mandatory overflow-y-scroll no-scrollbar">
-          {videos.map((v) => (
+          {items.map(({ video, key }) => (
             <VideoCard
-              key={v.id}
-              video={v}
+              key={key}
+              video={video}
               muted={muted}
               onToggleMute={() => setMuted((m) => !m)}
             />
           ))}
+          <div ref={sentinelRef} className="h-px w-full" aria-hidden />
         </div>
       ) : tab === "following" ? (
         <EmptyFollowing signedIn={!!user} />
