@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Flame, Sparkles, Radio, Bell } from "lucide-react";
-import { fetchFeed, fetchFollowingFeed } from "@/lib/feed";
+import { fetchFeed, fetchFollowingFeed, shuffle, type FeedVideo } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
