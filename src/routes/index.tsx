@@ -40,6 +40,45 @@ function FeedPage() {
     queryFn: tab === "following" ? fetchFollowingFeed : fetchFeed,
   });
 
+  // Never-ending feed: append reshuffled cycles of the loaded clips as the
+  // viewer nears the end, so the scroll feels infinite.
+  const [extraPages, setExtraPages] = useState<FeedVideo[][]>([]);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setExtraPages([]);
+  }, [videos]);
+
+  const loadMore = useCallback(() => {
+    setExtraPages((pages) => {
+      if (!videos || videos.length === 0) return pages;
+      if (pages.length >= 50) return pages; // hard safety cap
+      return [...pages, shuffle(videos)];
+    });
+  }, [videos]);
+
+  const items = useMemo(() => {
+    if (!videos) return [] as { video: FeedVideo; key: string }[];
+    return [videos, ...extraPages].flatMap((page, ci) =>
+      page.map((v) => ({ video: v, key: `${v.id}-${ci}` })),
+    );
+  }, [videos, extraPages]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !videos || videos.length === 0) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMore();
+      },
+      { rootMargin: "0px 0px 300% 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [videos, loadMore, items.length]);
+
+
+
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
       {/* top brand bar */}
