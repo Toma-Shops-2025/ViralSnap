@@ -37,13 +37,28 @@ function FeedPage() {
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["feed", tab, user?.id],
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) =>
-      tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam),
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
-  });
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+    useInfiniteQuery({
+      queryKey: ["feed", tab, user?.id],
+      initialPageParam: 0,
+      queryFn: ({ pageParam }) =>
+        tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam),
+      getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    });
+
+  // Safety net: publish any videos whose Mux webhook never arrived, then refresh.
+  const reconcile = useServerFn(reconcileStuckVideos);
+  useEffect(() => {
+    let cancelled = false;
+    reconcile({ data: undefined })
+      .then((res) => {
+        if (!cancelled && res?.published > 0) void refetch();
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [reconcile, refetch]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
