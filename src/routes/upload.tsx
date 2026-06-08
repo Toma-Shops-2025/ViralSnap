@@ -284,6 +284,46 @@ function UploadPage() {
             Type a short idea (or just a title) and let AI write the rest.
             {!isPro && " Pro only."}
           </p>
+
+          {titleOptions.length > 1 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Title options — tap to use
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {titleOptions.map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setTitle(opt)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-left text-xs transition-colors " +
+                      (title === opt
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-secondary text-foreground hover:border-primary/40")
+                    }
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(hook || postingTip) && (
+            <div className="mt-4 space-y-2 rounded-xl bg-secondary/60 p-3">
+              {hook && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">🪝 Hook:</span> {hook}
+                </p>
+              )}
+              {postingTip && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">🚀 Tip:</span>{" "}
+                  {postingTip}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
