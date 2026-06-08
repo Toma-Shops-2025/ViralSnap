@@ -173,6 +173,62 @@ export const createSupporterCheckoutSession = createServerFn({ method: "POST" })
     }
   });
 
+// ============ ViralSnap Pro subscription ($4.99/mo) ============
+const PRO_PRICE_ID = "pro_monthly";
+
+export const createProCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: { customerEmail?: string; returnUrl: string; environment: StripeEnv }) => data,
+  )
+  .handler(async ({ data, context }): Promise<CheckoutSessionResult> => {
+    try {
+      const userId = context.userId;
+      const stripe = createStripeClient(data.environment);
+
+      // Block duplicate Pro subscriptions.
+      const { data: existing } = await context.supabase
+        .from("pro_subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", userId)
+        .eq("environment", data.environment)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const stillActive =
+        existing &&
+        (["active", "trialing"].includes(existing.status) ||
+          (existing.status === "canceled" &&
+            existing.current_period_end &&
+            new Date(existing.current_period_end) > new Date()));
+      if (stillActive) return { error: "You already have ViralSnap Pro." };
+
+      const prices = await stripe.prices.list({ lookup_keys: [PRO_PRICE_ID] });
+      if (!prices.data.length) throw new Error("Pro price not found");
+      const stripePrice = prices.data[0];
+
+      const customerId = await resolveOrCreateCustomer(stripe, {
+        email: data.customerEmail,
+        userId,
+      });
+
+      const session = await stripe.checkout.sessions.create({
+        line_items: [{ price: stripePrice.id, quantity: 1 }],
+        mode: "subscription",
+        ui_mode: "embedded_page",
+        return_url: data.returnUrl,
+        customer: customerId,
+        ...({ managed_payments: { enabled: true } } as object),
+        metadata: { userId, plan: "pro", managed_payments: "true" },
+        subscription_data: { metadata: { userId, plan: "pro" } },
+      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
+
+      return { clientSecret: session.client_secret ?? "" };
+    } catch (error) {
+      return { error: getStripeErrorMessage(error) };
+    }
+  });
+
 type PortalResult = { url: string } | { error: string };
 
 // Opens the Stripe billing portal so a subscriber can manage/cancel.
@@ -181,15 +237,32 @@ export const createSubscriptionPortalSession = createServerFn({ method: "POST" }
   .inputValidator((data: { returnUrl?: string; environment: StripeEnv }) => data)
   .handler(async ({ data, context }): Promise<PortalResult> => {
     const { supabase, userId } = context;
-    const { data: sub } = await supabase
-      .from("creator_subscriptions")
+
+    // Prefer the Pro subscription's customer, falling back to supporter subs.
+    const { data: proSub } = await supabase
+      .from("pro_subscriptions")
       .select("stripe_customer_id")
-      .eq("subscriber_id", userId)
+      .eq("user_id", userId)
       .eq("environment", data.environment)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
+    let customerId = proSub?.stripe_customer_id as string | undefined;
+
+    if (!customerId) {
+      const { data: sub } = await supabase
+        .from("creator_subscriptions")
+        .select("stripe_customer_id")
+        .eq("subscriber_id", userId)
+        .eq("environment", data.environment)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      customerId = sub?.stripe_customer_id as string | undefined;
+    }
+
+    const sub = customerId ? { stripe_customer_id: customerId } : null;
     if (!sub?.stripe_customer_id) return { error: "No subscription found." };
 
     try {

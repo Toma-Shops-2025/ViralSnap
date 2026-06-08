@@ -3,6 +3,7 @@ import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import {
   createCoinCheckoutSession,
   createSupporterCheckoutSession,
+  createProCheckoutSession,
 } from "@/lib/payments.functions";
 
 interface StripeEmbeddedCheckoutProps {
@@ -10,6 +11,8 @@ interface StripeEmbeddedCheckoutProps {
   priceId?: string;
   // Creator supporter subscription
   creatorId?: string;
+  // ViralSnap Pro platform subscription
+  plan?: "pro";
   customerEmail?: string;
   userId: string;
   returnUrl?: string;
@@ -18,12 +21,21 @@ interface StripeEmbeddedCheckoutProps {
 export function StripeEmbeddedCheckout({
   priceId,
   creatorId,
+  plan,
   customerEmail,
   userId,
   returnUrl,
 }: StripeEmbeddedCheckoutProps) {
   const fetchClientSecret = async (): Promise<string> => {
-    const result = creatorId
+    const result = plan === "pro"
+      ? await createProCheckoutSession({
+          data: {
+            customerEmail,
+            returnUrl: returnUrl || window.location.href,
+            environment: getStripeEnvironment(),
+          },
+        })
+      : creatorId
       ? await createSupporterCheckoutSession({
           data: {
             creatorId,

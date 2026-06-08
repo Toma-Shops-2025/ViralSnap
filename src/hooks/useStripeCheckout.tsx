@@ -6,6 +6,8 @@ interface CheckoutOptions {
   priceId?: string;
   // Creator supporter subscription
   creatorId?: string;
+  // ViralSnap Pro platform subscription
+  plan?: "pro";
   customerEmail?: string;
   userId: string;
   returnUrl?: string;

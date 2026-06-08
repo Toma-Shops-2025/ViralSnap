@@ -1,17 +1,27 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Film, Loader2, Upload as UploadIcon, X } from "lucide-react";
+import { Film, Loader2, Sparkles, Upload as UploadIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
 import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
+import { generatePostContent } from "@/lib/pro.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/use-auth";
+import { useProSubscription } from "@/hooks/use-pro";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
@@ -23,11 +33,16 @@ export const Route = createFileRoute("/upload")({
 function UploadPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { isPro, refetch: refetchPro } = useProSubscription();
+  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [idea, setIdea] = useState("");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [hasProduct, setHasProduct] = useState(false);
   const [productTitle, setProductTitle] = useState("");
   const [productUrl, setProductUrl] = useState("");
@@ -35,6 +50,7 @@ function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const startMuxUpload = useServerFn(createMuxDirectUpload);
   const finalizeUpload = useServerFn(finalizeMuxUpload);
+  const generate = useServerFn(generatePostContent);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
@@ -47,6 +63,40 @@ function UploadPage() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  const upgradeToPro = () => {
+    if (!user) return navigate({ to: "/auth" });
+    openCheckout({
+      plan: "pro",
+      userId: user.id,
+      customerEmail: user.email ?? undefined,
+      returnUrl: `${window.location.origin}/upload?pro=success`,
+    });
+  };
+
+  const handleGenerate = async () => {
+    if (!user) return navigate({ to: "/auth" });
+    if (!isPro) return upgradeToPro();
+    if (idea.trim().length < 2) {
+      toast.error("Type a short idea first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await generate({
+        data: { idea: idea.trim(), environment: getStripeEnvironment() },
+      });
+      if ("error" in res) throw new Error(res.error);
+      setTitle(res.title);
+      setCaption(res.caption);
+      if (res.hashtags.length) setTags(res.hashtags.join(" "));
+      toast.success("Generated ✨");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const submit = async () => {
     if (!user || !file) return;
     setUploading(true);
@@ -57,12 +107,14 @@ function UploadPage() {
         .filter(Boolean)
         .slice(0, 8);
 
+      const finalTitle = (title.trim() || caption.slice(0, 80)).slice(0, 80);
+
       // 1. Create the video row in a processing state (no media URL yet).
       const { data: inserted, error: insErr } = await supabase
         .from("videos")
         .insert({
           creator_id: user.id,
-          title: caption.slice(0, 80),
+          title: finalTitle,
           caption,
           media_url: null,
           tags: tagList,
@@ -80,7 +132,6 @@ function UploadPage() {
       // 2. Ask Mux for a one-time direct-upload URL linked to this row.
       const result = await startMuxUpload({ data: { videoId: inserted.id } });
       if ("error" in result) {
-        // Clean up the orphaned row so it doesn't linger as processing.
         await supabase.from("videos").delete().eq("id", inserted.id);
         throw new Error(result.error);
       }
@@ -119,7 +170,6 @@ function UploadPage() {
     }
   };
 
-
   return (
     <div className="min-h-[100dvh] pb-28">
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
@@ -131,6 +181,22 @@ function UploadPage() {
       </header>
 
       <div className="mx-auto max-w-md space-y-5 px-4 py-5">
+        {!isPro && (
+          <button
+            onClick={upgradeToPro}
+            className="flex w-full items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
+          >
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold text-primary">Unlock AI features with Pro</p>
+              <p className="text-sm text-muted-foreground">
+                Auto-write titles, captions & hashtags from a single idea. Just
+                $4.99/mo. Upgrade →
+              </p>
+            </div>
+          </button>
+        )}
+
         {!previewUrl ? (
           <button
             onClick={() => inputRef.current?.click()}
@@ -162,6 +228,51 @@ function UploadPage() {
         />
 
         <div>
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="A scroll-stopping title"
+            className="mt-1 rounded-xl bg-card"
+          />
+        </div>
+
+        {/* AI generator — Pro perk */}
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <Label htmlFor="idea" className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-primary" /> Quick idea (optional)
+          </Label>
+          <Input
+            id="idea"
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+            placeholder="e.g. dreamy late-night drive synthwave"
+            className="mt-2 rounded-xl bg-secondary"
+          />
+          <Button
+            onClick={handleGenerate}
+            disabled={generating}
+            variant="outline"
+            className="mt-3 w-full rounded-xl border-primary/40 text-primary hover:bg-primary/10"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" /> Generate title, caption & hashtags
+              </>
+            )}
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Type a short idea (or just a title) and let AI write the rest.
+            {!isPro && " Pro only."}
+          </p>
+        </div>
+
+        <div>
           <Label htmlFor="caption">Caption</Label>
           <Textarea
             id="caption"
@@ -174,7 +285,7 @@ function UploadPage() {
         </div>
 
         <div>
-          <Label htmlFor="tags">Tags</Label>
+          <Label htmlFor="tags">Hashtags</Label>
           <Input
             id="tags"
             value={tags}
@@ -232,6 +343,23 @@ function UploadPage() {
           )}
         </Button>
       </div>
+
+      <Dialog
+        open={isOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            closeCheckout();
+            refetchPro();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upgrade to ViralSnap Pro</DialogTitle>
+          </DialogHeader>
+          {checkoutElement}
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

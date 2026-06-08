@@ -39,9 +39,49 @@ async function handleCheckoutCompleted(session: any) {
   }
 }
 
+// ============ ViralSnap Pro subscriptions ============
+async function handleProSubscriptionUpsert(subscription: any, env: StripeEnv) {
+  const userId = subscription.metadata?.userId;
+  if (!userId) {
+    console.error("Pro subscription missing userId metadata", subscription.id);
+    return;
+  }
+
+  const item = subscription.items?.data?.[0];
+  const priceId = item?.price?.lookup_key || item?.price?.id || "";
+  const periodEnd =
+    item?.current_period_end ?? subscription.current_period_end ?? null;
+
+  await getSupabase()
+    .from("pro_subscriptions" as never)
+    .upsert(
+      {
+        user_id: userId,
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: subscription.customer,
+        price_id: priceId,
+        status: subscription.status,
+        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+        environment: env,
+        updated_at: new Date().toISOString(),
+      } as never,
+      { onConflict: "stripe_subscription_id" } as never,
+    );
+}
+
 // ============ Creator supporter subscriptions ============
 async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
   const meta = subscription.metadata ?? {};
+  const item = subscription.items?.data?.[0];
+  const priceLookup = item?.price?.lookup_key || "";
+
+  // ViralSnap Pro is a platform subscription tracked in its own table.
+  if (meta.plan === "pro" || priceLookup === "pro_monthly") {
+    await handleProSubscriptionUpsert(subscription, env);
+    return;
+  }
+
   const subscriberId = meta.userId;
   const creatorId = meta.creatorId;
   const coins = Number(meta.coins ?? 0);
@@ -50,7 +90,6 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
     return;
   }
 
-  const item = subscription.items?.data?.[0];
   const priceId = item?.price?.lookup_key || item?.price?.id || "";
   const amountCents = item?.price?.unit_amount ?? 0;
   const periodEnd =
@@ -98,6 +137,13 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
+  // The subscription id is unique across both tables; only one row matches.
+  await getSupabase()
+    .from("pro_subscriptions" as never)
+    .update({ status: "canceled", updated_at: new Date().toISOString() } as never)
+    .eq("stripe_subscription_id", subscription.id)
+    .eq("environment", env);
+
   await getSupabase()
     .from("creator_subscriptions" as never)
     .update({ status: "canceled", updated_at: new Date().toISOString() } as never)
