@@ -229,6 +229,17 @@ function SettingsPage() {
   );
 }
 
+function LegalLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-xl border border-border bg-card px-3 py-3 text-xs font-medium text-foreground/90 transition-colors hover:border-primary/50"
+    >
+      {label}
+    </Link>
+  );
+}
+
 function Row({
   icon: Icon,
   label,
