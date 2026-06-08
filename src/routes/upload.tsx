@@ -183,7 +183,13 @@ function UploadPage() {
           <X className="h-6 w-6" />
         </Link>
         <h1 className="font-display text-lg font-bold">New post</h1>
-        <span className="w-6" />
+        {isPro ? (
+          <span className="rounded-full bg-gradient-fire px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-glow">
+            Pro
+          </span>
+        ) : (
+          <span className="w-6" />
+        )}
       </header>
 
       <div className="mx-auto max-w-md space-y-5 px-4 py-5">
