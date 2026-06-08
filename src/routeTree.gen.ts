@@ -15,7 +15,9 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as GuidelinesRouteImport } from './routes/guidelines'
 import { Route as EarningsRouteImport } from './routes/earnings'
+import { Route as DmcaRouteImport } from './routes/dmca'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -58,9 +60,19 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidelinesRoute = GuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EarningsRoute = EarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DmcaRoute = DmcaRouteImport.update({
+  id: '/dmca',
+  path: '/dmca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscoverRoute = DiscoverRouteImport.update({
@@ -127,7 +139,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -147,7 +161,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -168,7 +184,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
@@ -190,7 +208,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
     | '/privacy'
     | '/search'
     | '/settings'
@@ -210,7 +230,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
     | '/privacy'
     | '/search'
     | '/settings'
@@ -230,7 +252,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/campaigns'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
     | '/privacy'
     | '/search'
     | '/settings'
@@ -251,7 +275,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CampaignsRoute: typeof CampaignsRoute
   DiscoverRoute: typeof DiscoverRoute
+  DmcaRoute: typeof DmcaRoute
   EarningsRoute: typeof EarningsRoute
+  GuidelinesRoute: typeof GuidelinesRoute
   PrivacyRoute: typeof PrivacyRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
@@ -310,11 +336,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guidelines': {
+      id: '/guidelines'
+      path: '/guidelines'
+      fullPath: '/guidelines'
+      preLoaderRoute: typeof GuidelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/earnings': {
       id: '/earnings'
       path: '/earnings'
       fullPath: '/earnings'
       preLoaderRoute: typeof EarningsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dmca': {
+      id: '/dmca'
+      path: '/dmca'
+      fullPath: '/dmca'
+      preLoaderRoute: typeof DmcaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discover': {
@@ -403,7 +443,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CampaignsRoute: CampaignsRoute,
   DiscoverRoute: DiscoverRoute,
+  DmcaRoute: DmcaRoute,
   EarningsRoute: EarningsRoute,
+  GuidelinesRoute: GuidelinesRoute,
   PrivacyRoute: PrivacyRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
