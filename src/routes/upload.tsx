@@ -34,6 +34,7 @@ function UploadPage() {
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
   const startMuxUpload = useServerFn(createMuxDirectUpload);
+  const finalizeUpload = useServerFn(finalizeMuxUpload);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
