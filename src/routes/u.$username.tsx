@@ -269,7 +269,7 @@ function ProfilePage() {
                 <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" />
               ) : (
                 <video
-                  src={v.media_url}
+                  src={v.media_url ?? undefined}
                   muted
                   playsInline
                   preload="metadata"

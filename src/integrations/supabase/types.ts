@@ -873,7 +873,11 @@ export type Database = {
           id: string
           is_affiliate: boolean
           like_count: number
-          media_url: string
+          media_url: string | null
+          mux_asset_id: string | null
+          mux_asset_status: string | null
+          mux_playback_id: string | null
+          mux_upload_id: string | null
           product_clicks: number
           product_cta: string | null
           product_description: string | null
@@ -894,7 +898,11 @@ export type Database = {
           id?: string
           is_affiliate?: boolean
           like_count?: number
-          media_url: string
+          media_url?: string | null
+          mux_asset_id?: string | null
+          mux_asset_status?: string | null
+          mux_playback_id?: string | null
+          mux_upload_id?: string | null
           product_clicks?: number
           product_cta?: string | null
           product_description?: string | null
@@ -915,7 +923,11 @@ export type Database = {
           id?: string
           is_affiliate?: boolean
           like_count?: number
-          media_url?: string
+          media_url?: string | null
+          mux_asset_id?: string | null
+          mux_asset_status?: string | null
+          mux_playback_id?: string | null
+          mux_upload_id?: string | null
           product_clicks?: number
           product_cta?: string | null
           product_description?: string | null
@@ -1037,7 +1049,7 @@ export type Database = {
       stream_status: "live" | "ended"
       sub_status: "active" | "cancelled"
       sub_tier: "fan" | "supporter" | "vip"
-      video_status: "published" | "removed"
+      video_status: "published" | "removed" | "processing" | "errored"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1199,7 +1211,7 @@ export const Constants = {
       stream_status: ["live", "ended"],
       sub_status: ["active", "cancelled"],
       sub_tier: ["fan", "supporter", "vip"],
-      video_status: ["published", "removed"],
+      video_status: ["published", "removed", "processing", "errored"],
     },
   },
 } as const

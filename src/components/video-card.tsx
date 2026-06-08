@@ -42,7 +42,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 
   useEffect(() => {
     const el = videoRef.current;
-    if (!el || !nearView || !assetReady) return;
+    if (!el || !nearView || !assetReady || !playbackUrl) return;
 
     if (adaptive) {
       if (el.canPlayType("application/vnd.apple.mpegurl")) {

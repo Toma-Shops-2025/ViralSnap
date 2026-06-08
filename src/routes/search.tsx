@@ -169,7 +169,7 @@ function SearchPage() {
                   {v.cover_url ? (
                     <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" />
                   ) : (
-                    <video src={v.media_url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                    <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center gap-2 text-[10px] text-white/90">
