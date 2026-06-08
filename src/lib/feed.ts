@@ -62,18 +62,40 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 }
 
 export async function fetchFeedPage(page = 0): Promise<FeedPage> {
-  const from = page * FEED_PAGE_SIZE;
-  const to = from + FEED_PAGE_SIZE - 1;
+  // Endless feed: once we run out of fresh videos we wrap back to the start so
+  // the user can keep scrolling forever, reshuffling each page on the way.
+  const { count } = await supabase
+    .from("videos")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+  const total = count ?? 0;
+  if (total === 0) return { items: [], hasMore: false, page };
+
+  const offset = (page * FEED_PAGE_SIZE) % total;
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
     .order("created_at", { ascending: false })
-    .range(from, to);
+    .range(offset, offset + FEED_PAGE_SIZE - 1);
   if (error) throw error;
+
+  let rows = (data ?? []) as VideoRow[];
+  // Top up from the beginning when this page crossed the wrap boundary.
+  if (rows.length < FEED_PAGE_SIZE && total > rows.length) {
+    const remaining = FEED_PAGE_SIZE - rows.length;
+    const { data: more } = await supabase
+      .from("videos")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .range(0, remaining - 1);
+    rows = [...rows, ...((more ?? []) as VideoRow[])];
+  }
+
   return {
-    items: shuffle(await attachCreatorsAndLikes((data ?? []) as VideoRow[])),
-    hasMore: (data ?? []).length === FEED_PAGE_SIZE,
+    items: shuffle(await attachCreatorsAndLikes(rows)),
+    hasMore: true,
     page,
   };
 }
