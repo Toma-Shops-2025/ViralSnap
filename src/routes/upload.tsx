@@ -89,9 +89,12 @@ function UploadPage() {
         data: { idea: idea.trim(), environment: getStripeEnvironment() },
       });
       if ("error" in res) throw new Error(res.error);
-      setTitle(res.title);
+      setTitleOptions(res.titleOptions);
+      setTitle(res.titleOptions[0] ?? "");
       setCaption(res.caption);
       if (res.hashtags.length) setTags(res.hashtags.join(" "));
+      setHook(res.hook);
+      setPostingTip(res.postingTip);
       toast.success("Generated ✨");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
