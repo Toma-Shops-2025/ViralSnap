@@ -33,6 +33,7 @@ function UploadPage() {
   const [productUrl, setProductUrl] = useState("");
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
+  const startMuxUpload = useServerFn(createMuxDirectUpload);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
@@ -49,36 +50,52 @@ function UploadPage() {
     if (!user || !file) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "mp4";
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("videos")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (upErr) throw upErr;
-
-      const { data: pub } = supabase.storage.from("videos").getPublicUrl(path);
-
       const tagList = tags
         .split(/[,\s]+/)
         .map((t) => t.replace(/^#/, "").trim())
         .filter(Boolean)
         .slice(0, 8);
 
-      const { error: insErr } = await supabase.from("videos").insert({
-        creator_id: user.id,
-        title: caption.slice(0, 80),
-        caption,
-        media_url: pub.publicUrl,
-        tags: tagList,
-        status: "published",
-        is_affiliate: hasProduct,
-        product_title: hasProduct ? productTitle || null : null,
-        product_url: hasProduct ? productUrl || null : null,
-        product_cta: hasProduct ? productCta || null : null,
-      });
-      if (insErr) throw insErr;
+      // 1. Create the video row in a processing state (no media URL yet).
+      const { data: inserted, error: insErr } = await supabase
+        .from("videos")
+        .insert({
+          creator_id: user.id,
+          title: caption.slice(0, 80),
+          caption,
+          media_url: null,
+          tags: tagList,
+          status: "processing",
+          mux_asset_status: "preparing",
+          is_affiliate: hasProduct,
+          product_title: hasProduct ? productTitle || null : null,
+          product_url: hasProduct ? productUrl || null : null,
+          product_cta: hasProduct ? productCta || null : null,
+        })
+        .select("id")
+        .single();
+      if (insErr || !inserted) throw insErr ?? new Error("Could not create post");
 
-      toast.success("Posted! 🔥 Your video is live.");
+      // 2. Ask Mux for a one-time direct-upload URL linked to this row.
+      const result = await startMuxUpload({ data: { videoId: inserted.id } });
+      if ("error" in result) {
+        // Clean up the orphaned row so it doesn't linger as processing.
+        await supabase.from("videos").delete().eq("id", inserted.id);
+        throw new Error(result.error);
+      }
+
+      // 3. Upload the raw file straight to Mux.
+      const putRes = await fetch(result.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "video/mp4" },
+        body: file,
+      });
+      if (!putRes.ok) {
+        await supabase.from("videos").delete().eq("id", inserted.id);
+        throw new Error("Upload to Mux failed");
+      }
+
+      toast.success("Uploaded! 🔥 Your video is processing and will go live in a moment.");
       navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
@@ -86,6 +103,7 @@ function UploadPage() {
       setUploading(false);
     }
   };
+
 
   return (
     <div className="min-h-[100dvh] pb-28">
