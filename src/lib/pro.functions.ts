@@ -4,9 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 type StripeEnv = "sandbox" | "live";
 
 export type GeneratedPost = {
-  title: string;
+  titleOptions: string[];
   caption: string;
   hashtags: string[];
+  hook: string;
+  postingTip: string;
 };
 
 type GenerateResult = GeneratedPost | { error: string };
