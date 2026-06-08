@@ -229,7 +229,16 @@ function SettingsPage() {
   );
 }
 
-function LegalLink({ to, label }: { to: string; label: string }) {
+type LegalRoute =
+  | "/privacy"
+  | "/terms"
+  | "/guidelines"
+  | "/dmca"
+  | "/refunds"
+  | "/account-deletion"
+  | "/contact";
+
+function LegalLink({ to, label }: { to: LegalRoute; label: string }) {
   return (
     <Link
       to={to}
