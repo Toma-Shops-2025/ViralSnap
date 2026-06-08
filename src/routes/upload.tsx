@@ -96,6 +96,20 @@ function UploadPage() {
         throw new Error("Upload to Mux failed");
       }
 
+      // 4. Publish without relying on the dashboard webhook: poll Mux for the
+      //    asset to finish encoding, then the server flips it to published.
+      void (async () => {
+        for (let attempt = 0; attempt < 40; attempt++) {
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            const res = await finalizeUpload({ data: { videoId: inserted.id } });
+            if (res.status === "ready" || res.status === "errored") break;
+          } catch {
+            // keep polling; the safety-net reconcile will catch it otherwise
+          }
+        }
+      })();
+
       toast.success("Uploaded! 🔥 Your video is processing and will go live in a moment.");
       navigate({ to: "/" });
     } catch (err) {
