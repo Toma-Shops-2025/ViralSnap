@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
-import { createMuxDirectUpload } from "@/lib/mux.functions";
+import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/upload")({
@@ -34,6 +34,7 @@ function UploadPage() {
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
   const startMuxUpload = useServerFn(createMuxDirectUpload);
+  const finalizeUpload = useServerFn(finalizeMuxUpload);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });
@@ -94,6 +95,20 @@ function UploadPage() {
         await supabase.from("videos").delete().eq("id", inserted.id);
         throw new Error("Upload to Mux failed");
       }
+
+      // 4. Publish without relying on the dashboard webhook: poll Mux for the
+      //    asset to finish encoding, then the server flips it to published.
+      void (async () => {
+        for (let attempt = 0; attempt < 40; attempt++) {
+          await new Promise((r) => setTimeout(r, 3000));
+          try {
+            const res = await finalizeUpload({ data: { videoId: inserted.id } });
+            if (res.status === "ready" || res.status === "errored") break;
+          } catch {
+            // keep polling; the safety-net reconcile will catch it otherwise
+          }
+        }
+      })();
 
       toast.success("Uploaded! 🔥 Your video is processing and will go live in a moment.");
       navigate({ to: "/" });
