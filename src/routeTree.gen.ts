@@ -11,13 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as GuidelinesRouteImport } from './routes/guidelines'
 import { Route as EarningsRouteImport } from './routes/earnings'
+import { Route as DmcaRouteImport } from './routes/dmca'
 import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -36,6 +43,11 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -46,14 +58,39 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidelinesRoute = GuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EarningsRoute = EarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DmcaRoute = DmcaRouteImport.update({
+  id: '/dmca',
+  path: '/dmca',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CampaignsRoute = CampaignsRouteImport.update({
@@ -69,6 +106,11 @@ const AuthRoute = AuthRouteImport.update({
 const ActivityRoute = ActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountDeletionRoute = AccountDeletionRouteImport.update({
+  id: '/account-deletion',
+  path: '/account-deletion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -111,13 +153,20 @@ const ApiPublicMuxWebhookRoute = ApiPublicMuxWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -129,13 +178,20 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -148,13 +204,20 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
+  '/dmca': typeof DmcaRoute
   '/earnings': typeof EarningsRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/live/$streamId': typeof LiveStreamIdRoute
@@ -168,13 +231,20 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account-deletion'
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/contact'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
+    | '/privacy'
+    | '/refunds'
     | '/search'
     | '/settings'
+    | '/terms'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -186,13 +256,20 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account-deletion'
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/contact'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
+    | '/privacy'
+    | '/refunds'
     | '/search'
     | '/settings'
+    | '/terms'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -204,13 +281,20 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account-deletion'
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/contact'
     | '/discover'
+    | '/dmca'
     | '/earnings'
+    | '/guidelines'
+    | '/privacy'
+    | '/refunds'
     | '/search'
     | '/settings'
+    | '/terms'
     | '/upload'
     | '/wallet'
     | '/live/$streamId'
@@ -223,13 +307,20 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountDeletionRoute: typeof AccountDeletionRoute
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   CampaignsRoute: typeof CampaignsRoute
+  ContactRoute: typeof ContactRoute
   DiscoverRoute: typeof DiscoverRoute
+  DmcaRoute: typeof DmcaRoute
   EarningsRoute: typeof EarningsRoute
+  GuidelinesRoute: typeof GuidelinesRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundsRoute: typeof RefundsRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
@@ -256,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -270,6 +368,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guidelines': {
+      id: '/guidelines'
+      path: '/guidelines'
+      fullPath: '/guidelines'
+      preLoaderRoute: typeof GuidelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/earnings': {
       id: '/earnings'
       path: '/earnings'
@@ -277,11 +396,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EarningsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dmca': {
+      id: '/dmca'
+      path: '/dmca'
+      fullPath: '/dmca'
+      preLoaderRoute: typeof DmcaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/discover': {
       id: '/discover'
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/campaigns': {
@@ -303,6 +436,13 @@ declare module '@tanstack/react-router' {
       path: '/activity'
       fullPath: '/activity'
       preLoaderRoute: typeof ActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account-deletion': {
+      id: '/account-deletion'
+      path: '/account-deletion'
+      fullPath: '/account-deletion'
+      preLoaderRoute: typeof AccountDeletionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -359,13 +499,20 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountDeletionRoute: AccountDeletionRoute,
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   CampaignsRoute: CampaignsRoute,
+  ContactRoute: ContactRoute,
   DiscoverRoute: DiscoverRoute,
+  DmcaRoute: DmcaRoute,
   EarningsRoute: EarningsRoute,
+  GuidelinesRoute: GuidelinesRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundsRoute: RefundsRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,
