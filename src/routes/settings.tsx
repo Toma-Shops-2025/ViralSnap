@@ -204,7 +204,24 @@ function SettingsPage() {
             </AlertDialog>
           </div>
         </section>
+
+        {/* Legal & support */}
+        <section>
+          <h2 className="mb-3 font-display text-lg font-bold text-muted-foreground">
+            Legal &amp; support
+          </h2>
+          <div className="grid grid-cols-2 gap-2">
+            <LegalLink to="/privacy" label="Privacy Policy" />
+            <LegalLink to="/terms" label="Terms of Service" />
+            <LegalLink to="/guidelines" label="Community Guidelines" />
+            <LegalLink to="/dmca" label="DMCA & Content" />
+            <LegalLink to="/refunds" label="Refund Policy" />
+            <LegalLink to="/account-deletion" label="Delete account" />
+            <LegalLink to="/contact" label="Contact & Support" />
+          </div>
+        </section>
       </div>
+
 
       <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
       <BottomNav />
