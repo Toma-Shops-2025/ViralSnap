@@ -227,7 +227,7 @@ function EarningsPage() {
                   {v.cover_url ? (
                     <img src={v.cover_url} alt={v.title} className="h-14 w-10 rounded-md object-cover" />
                   ) : (
-                    <video src={v.media_url} muted playsInline preload="metadata" className="h-14 w-10 rounded-md object-cover" />
+                    <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-14 w-10 rounded-md object-cover" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{v.title || v.caption || "Untitled"}</p>
