@@ -2,12 +2,14 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type VideoRow = Tables<"videos">;
 
-export function getVideoPlaybackUrl(video: Pick<VideoRow, "media_url"> & Partial<VideoRow>) {
+export function getVideoPlaybackUrl(
+  video: Pick<VideoRow, "media_url"> & Partial<VideoRow>,
+): string {
   const muxPlaybackId = "mux_playback_id" in video ? video.mux_playback_id : null;
   if (muxPlaybackId) {
     return `https://stream.mux.com/${muxPlaybackId}.m3u8`;
   }
-  return video.media_url;
+  return video.media_url ?? "";
 }
 
 export function getVideoPosterUrl(video: Partial<VideoRow>) {
