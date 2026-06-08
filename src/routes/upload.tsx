@@ -42,6 +42,9 @@ function UploadPage() {
   const [idea, setIdea] = useState("");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
+  const [titleOptions, setTitleOptions] = useState<string[]>([]);
+  const [hook, setHook] = useState("");
+  const [postingTip, setPostingTip] = useState("");
   const [generating, setGenerating] = useState(false);
   const [hasProduct, setHasProduct] = useState(false);
   const [productTitle, setProductTitle] = useState("");
@@ -86,9 +89,12 @@ function UploadPage() {
         data: { idea: idea.trim(), environment: getStripeEnvironment() },
       });
       if ("error" in res) throw new Error(res.error);
-      setTitle(res.title);
+      setTitleOptions(res.titleOptions);
+      setTitle(res.titleOptions[0] ?? "");
       setCaption(res.caption);
       if (res.hashtags.length) setTags(res.hashtags.join(" "));
+      setHook(res.hook);
+      setPostingTip(res.postingTip);
       toast.success("Generated ✨");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
@@ -177,23 +183,37 @@ function UploadPage() {
           <X className="h-6 w-6" />
         </Link>
         <h1 className="font-display text-lg font-bold">New post</h1>
-        <span className="w-6" />
+        {isPro ? (
+          <span className="rounded-full bg-gradient-fire px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-glow">
+            Pro
+          </span>
+        ) : (
+          <span className="w-6" />
+        )}
       </header>
 
       <div className="mx-auto max-w-md space-y-5 px-4 py-5">
         {!isPro && (
           <button
             onClick={upgradeToPro}
-            className="flex w-full items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
+            className="w-full rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
           >
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold text-primary">Unlock AI features with Pro</p>
-              <p className="text-sm text-muted-foreground">
-                Auto-write titles, captions & hashtags from a single idea. Just
-                $4.99/mo. Upgrade →
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+              <p className="font-semibold text-primary">
+                Go Pro — supercharge every post
               </p>
             </div>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>✨ AI title, caption & hashtag generator</li>
+              <li>🎯 3 title options to pick from, every time</li>
+              <li>🪝 Scroll-stopping hook + best-time-to-post tips</li>
+              <li>🏅 Pro badge on your profile</li>
+              <li>🚀 Priority access to new features</li>
+            </ul>
+            <p className="mt-3 text-sm font-semibold text-primary">
+              Just $4.99/mo — Upgrade →
+            </p>
           </button>
         )}
 
@@ -270,6 +290,46 @@ function UploadPage() {
             Type a short idea (or just a title) and let AI write the rest.
             {!isPro && " Pro only."}
           </p>
+
+          {titleOptions.length > 1 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Title options — tap to use
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {titleOptions.map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setTitle(opt)}
+                    className={
+                      "rounded-full border px-3 py-1.5 text-left text-xs transition-colors " +
+                      (title === opt
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-secondary text-foreground hover:border-primary/40")
+                    }
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(hook || postingTip) && (
+            <div className="mt-4 space-y-2 rounded-xl bg-secondary/60 p-3">
+              {hook && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">🪝 Hook:</span> {hook}
+                </p>
+              )}
+              {postingTip && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">🚀 Tip:</span>{" "}
+                  {postingTip}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div>

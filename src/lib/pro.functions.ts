@@ -4,9 +4,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 type StripeEnv = "sandbox" | "live";
 
 export type GeneratedPost = {
-  title: string;
+  titleOptions: string[];
   caption: string;
   hashtags: string[];
+  hook: string;
+  postingTip: string;
 };
 
 type GenerateResult = GeneratedPost | { error: string };
@@ -69,9 +71,12 @@ export const generatePostContent = createServerFn({ method: "POST" })
               content:
                 "You are a viral short-form video copywriter for a TikTok-style app called ViralSnap. " +
                 "Given a short idea, write content engineered for maximum reach. " +
-                "Respond ONLY as compact JSON with keys: title (max 80 chars, scroll-stopping), " +
+                "Respond ONLY as compact JSON with keys: " +
+                "titleOptions (array of exactly 3 distinct scroll-stopping titles, each max 80 chars), " +
                 "caption (1-3 punchy sentences with a hook, may use 1-2 emojis), " +
-                "hashtags (array of 5-8 lowercase hashtags WITHOUT the # symbol, no spaces). " +
+                "hashtags (array of 5-8 lowercase hashtags WITHOUT the # symbol, no spaces), " +
+                "hook (one short opening line to say in the first 3 seconds of the video), " +
+                "postingTip (one short, practical tip on when or how to post for max reach). " +
                 "Do not include any text outside the JSON.",
             },
             { role: "user", content: data.idea },
@@ -102,10 +107,19 @@ export const generatePostContent = createServerFn({ method: "POST" })
             .slice(0, 8)
         : [];
 
+      const titleOptions = Array.isArray(parsed.titleOptions)
+        ? parsed.titleOptions
+            .map((t) => String(t).trim().slice(0, 80))
+            .filter(Boolean)
+            .slice(0, 3)
+        : [];
+
       return {
-        title: String(parsed.title ?? "").slice(0, 80),
+        titleOptions: titleOptions.length ? titleOptions : ["Untitled drop"],
         caption: String(parsed.caption ?? ""),
         hashtags,
+        hook: String(parsed.hook ?? ""),
+        postingTip: String(parsed.postingTip ?? ""),
       };
     } catch (err) {
       console.error("generatePostContent error:", err);
