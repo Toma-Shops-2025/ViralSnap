@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createDirectUpload } from "@/lib/mux.server";
+import { createDirectUpload, reconcileUpload } from "@/lib/mux.server";
 
 /**
  * Creates a Mux direct-upload for a video the current user owns and records the
