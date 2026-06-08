@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
-import { createMuxDirectUpload } from "@/lib/mux.functions";
+import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/upload")({
