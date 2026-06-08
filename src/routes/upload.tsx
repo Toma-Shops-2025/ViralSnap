@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Film, Loader2, Upload as UploadIcon, X } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
+import { createMuxDirectUpload } from "@/lib/mux.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/upload")({
