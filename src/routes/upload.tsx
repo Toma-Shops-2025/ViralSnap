@@ -42,6 +42,9 @@ function UploadPage() {
   const [idea, setIdea] = useState("");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
+  const [titleOptions, setTitleOptions] = useState<string[]>([]);
+  const [hook, setHook] = useState("");
+  const [postingTip, setPostingTip] = useState("");
   const [generating, setGenerating] = useState(false);
   const [hasProduct, setHasProduct] = useState(false);
   const [productTitle, setProductTitle] = useState("");
