@@ -190,16 +190,24 @@ function UploadPage() {
         {!isPro && (
           <button
             onClick={upgradeToPro}
-            className="flex w-full items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
+            className="w-full rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
           >
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold text-primary">Unlock AI features with Pro</p>
-              <p className="text-sm text-muted-foreground">
-                Auto-write titles, captions & hashtags from a single idea. Just
-                $4.99/mo. Upgrade →
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
+              <p className="font-semibold text-primary">
+                Go Pro — supercharge every post
               </p>
             </div>
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>✨ AI title, caption & hashtag generator</li>
+              <li>🎯 3 title options to pick from, every time</li>
+              <li>🪝 Scroll-stopping hook + best-time-to-post tips</li>
+              <li>🏅 Pro badge on your profile</li>
+              <li>🚀 Priority access to new features</li>
+            </ul>
+            <p className="mt-3 text-sm font-semibold text-primary">
+              Just $4.99/mo — Upgrade →
+            </p>
           </button>
         )}
 
