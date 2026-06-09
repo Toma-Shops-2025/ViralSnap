@@ -66,6 +66,7 @@ function LegalFooter() {
       <Link to="/privacy" className="text-gold">Privacy</Link>
       <Link to="/terms" className="text-gold">Terms</Link>
       <Link to="/guidelines" className="text-gold">Guidelines</Link>
+      <Link to="/child-safety" className="text-gold">Child Safety</Link>
       <Link to="/dmca" className="text-gold">DMCA</Link>
       <Link to="/refunds" className="text-gold">Refunds</Link>
       <Link to="/account-deletion" className="text-gold">Delete account</Link>

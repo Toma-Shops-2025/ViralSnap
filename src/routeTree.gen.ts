@@ -21,6 +21,7 @@ import { Route as EarningsRouteImport } from './routes/earnings'
 import { Route as DmcaRouteImport } from './routes/dmca'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ChildSafetyRouteImport } from './routes/child-safety'
 import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ActivityRouteImport } from './routes/activity'
@@ -93,6 +94,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChildSafetyRoute = ChildSafetyRouteImport.update({
+  id: '/child-safety',
+  path: '/child-safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CampaignsRoute = CampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/dmca': typeof DmcaRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/dmca': typeof DmcaRoute
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/campaigns': typeof CampaignsRoute
+  '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
   '/discover': typeof DiscoverRoute
   '/dmca': typeof DmcaRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/child-safety'
     | '/contact'
     | '/discover'
     | '/dmca'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/child-safety'
     | '/contact'
     | '/discover'
     | '/dmca'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/auth'
     | '/campaigns'
+    | '/child-safety'
     | '/contact'
     | '/discover'
     | '/dmca'
@@ -311,6 +323,7 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   CampaignsRoute: typeof CampaignsRoute
+  ChildSafetyRoute: typeof ChildSafetyRoute
   ContactRoute: typeof ContactRoute
   DiscoverRoute: typeof DiscoverRoute
   DmcaRoute: typeof DmcaRoute
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/child-safety': {
+      id: '/child-safety'
+      path: '/child-safety'
+      fullPath: '/child-safety'
+      preLoaderRoute: typeof ChildSafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/campaigns': {
       id: '/campaigns'
       path: '/campaigns'
@@ -503,6 +523,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   CampaignsRoute: CampaignsRoute,
+  ChildSafetyRoute: ChildSafetyRoute,
   ContactRoute: ContactRoute,
   DiscoverRoute: DiscoverRoute,
   DmcaRoute: DmcaRoute,
@@ -525,13 +546,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
