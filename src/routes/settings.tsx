@@ -10,6 +10,7 @@ import {
   Trash2,
   Loader2,
   Heart,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,6 +136,12 @@ function SettingsPage() {
               loading={portalLoading}
               disabled={!hasSub}
               onClick={handlePortal}
+            />
+            <Row
+              icon={Share2}
+              label="Share ViralSnap"
+              hint="QR code & invite link"
+              onClick={() => navigate({ to: "/share" })}
             />
           </div>
         </section>

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ShareRouteImport } from './routes/share'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RefundsRouteImport } from './routes/refunds'
@@ -47,6 +48,11 @@ const UploadRoute = UploadRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareRoute = ShareRouteImport.update({
+  id: '/share',
+  path: '/share',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/share': typeof ShareRoute
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/share': typeof ShareRoute
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
@@ -226,6 +234,7 @@ export interface FileRoutesById {
   '/refunds': typeof RefundsRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/share': typeof ShareRoute
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/search'
     | '/settings'
+    | '/share'
     | '/terms'
     | '/upload'
     | '/wallet'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/search'
     | '/settings'
+    | '/share'
     | '/terms'
     | '/upload'
     | '/wallet'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/search'
     | '/settings'
+    | '/share'
     | '/terms'
     | '/upload'
     | '/wallet'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   RefundsRoute: typeof RefundsRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  ShareRoute: typeof ShareRoute
   TermsRoute: typeof TermsRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share': {
+      id: '/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -533,6 +553,7 @@ const rootRouteChildren: RootRouteChildren = {
   RefundsRoute: RefundsRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  ShareRoute: ShareRoute,
   TermsRoute: TermsRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
@@ -546,13 +567,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
