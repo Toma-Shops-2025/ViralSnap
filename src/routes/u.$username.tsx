@@ -186,6 +186,15 @@ function ProfilePage() {
               <Button
                 variant="outline"
                 size="icon"
+                onClick={() => navigate({ to: "/share" })}
+                className="rounded-full border-border bg-card"
+                aria-label="Share ViralSnap"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={async () => {
                   await signOut();
                   toast.success("Signed out");
