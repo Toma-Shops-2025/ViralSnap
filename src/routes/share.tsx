@@ -98,15 +98,11 @@ function SharePage() {
         {/* White rounded QR card */}
         <div className="w-full max-w-xs rounded-3xl bg-white p-6 shadow-glow">
           <div className="aspect-square w-full overflow-hidden rounded-2xl">
-            {qr ? (
-              <img
-                src={qr}
-                alt="QR code to viralsnap.online"
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <div className="h-full w-full animate-pulse rounded-2xl bg-black/10" />
-            )}
+            <img
+              src={qrAsset.url}
+              alt="QR code to viralsnap.online"
+              className="h-full w-full object-contain"
+            />
           </div>
           <p className="mt-4 text-center font-display text-base font-bold text-[#1a1326]">
             viralsnap.online
