@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import QRCode from "qrcode";
-import { ArrowLeft, Copy, Check, Share2, Download, Flame } from "lucide-react";
+import { useState } from "react";
+import { Copy, Check, Share2, Download, Flame, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/bottom-nav";
+import qrAsset from "@/assets/viralsnap-qr.png.asset.json";
 import { toast } from "sonner";
 
 const SHARE_URL = "https://viralsnap.online";
@@ -28,19 +28,7 @@ export const Route = createFileRoute("/share")({
 });
 
 function SharePage() {
-  const [qr, setQr] = useState<string>("");
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    QRCode.toDataURL(SHARE_URL, {
-      errorCorrectionLevel: "H",
-      margin: 1,
-      width: 640,
-      color: { dark: "#1a1326", light: "#ffffff" },
-    })
-      .then(setQr)
-      .catch(() => {});
-  }, []);
 
   const handleCopy = async () => {
     try {
@@ -69,14 +57,21 @@ function SharePage() {
     }
   };
 
-  const handleDownload = () => {
-    if (!qr) return;
-    const a = document.createElement("a");
-    a.href = qr;
-    a.download = "viralsnap-qr.png";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(qrAsset.url);
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "viralsnap-qr.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+    } catch {
+      toast.error("Could not download the QR code");
+    }
   };
 
   return (
@@ -103,15 +98,11 @@ function SharePage() {
         {/* White rounded QR card */}
         <div className="w-full max-w-xs rounded-3xl bg-white p-6 shadow-glow">
           <div className="aspect-square w-full overflow-hidden rounded-2xl">
-            {qr ? (
-              <img
-                src={qr}
-                alt="QR code to viralsnap.online"
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <div className="h-full w-full animate-pulse rounded-2xl bg-black/10" />
-            )}
+            <img
+              src={qrAsset.url}
+              alt="QR code to viralsnap.online"
+              className="h-full w-full object-contain"
+            />
           </div>
           <p className="mt-4 text-center font-display text-base font-bold text-[#1a1326]">
             viralsnap.online
