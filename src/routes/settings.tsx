@@ -137,6 +137,12 @@ function SettingsPage() {
               disabled={!hasSub}
               onClick={handlePortal}
             />
+            <Row
+              icon={Share2}
+              label="Share ViralSnap"
+              hint="QR code & invite link"
+              onClick={() => navigate({ to: "/share" })}
+            />
           </div>
         </section>
 
