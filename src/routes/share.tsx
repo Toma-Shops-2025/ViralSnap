@@ -57,14 +57,21 @@ function SharePage() {
     }
   };
 
-  const handleDownload = () => {
-    if (!qr) return;
-    const a = document.createElement("a");
-    a.href = qr;
-    a.download = "viralsnap-qr.png";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(qrAsset.url);
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "viralsnap-qr.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+    } catch {
+      toast.error("Could not download the QR code");
+    }
   };
 
   return (
