@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import QRCode from "qrcode";
-import { ArrowLeft, Copy, Check, Share2, Download, Flame } from "lucide-react";
+import { useState } from "react";
+import { Copy, Check, Share2, Download, Flame, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/bottom-nav";
+import qrAsset from "@/assets/viralsnap-qr.png.asset.json";
 import { toast } from "sonner";
 
 const SHARE_URL = "https://viralsnap.online";
@@ -28,19 +28,7 @@ export const Route = createFileRoute("/share")({
 });
 
 function SharePage() {
-  const [qr, setQr] = useState<string>("");
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    QRCode.toDataURL(SHARE_URL, {
-      errorCorrectionLevel: "H",
-      margin: 1,
-      width: 640,
-      color: { dark: "#1a1326", light: "#ffffff" },
-    })
-      .then(setQr)
-      .catch(() => {});
-  }, []);
 
   const handleCopy = async () => {
     try {
