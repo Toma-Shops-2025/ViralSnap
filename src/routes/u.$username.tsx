@@ -14,6 +14,7 @@ import { SUPPORTER_PRICE_LABEL } from "@/lib/subscriptions";
 import { compact } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 
 export const Route = createFileRoute("/u/$username")({
   head: () => ({ meta: [{ title: "Profile — ViralSnap" }] }),
