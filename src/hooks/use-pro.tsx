@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 /**
  * Reads the current user's ViralSnap Pro status from the pro_subscriptions
@@ -10,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
  */
 export function useProSubscription() {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const query = useQuery({
     queryKey: ["pro-subscription", user?.id],
@@ -29,15 +31,17 @@ export function useProSubscription() {
   });
 
   const sub = query.data;
-  const isPro = !!(
-    sub &&
-    ((["active", "trialing"].includes(sub.status) &&
-      (!sub.current_period_end ||
-        new Date(sub.current_period_end) > new Date())) ||
-      (sub.status === "canceled" &&
-        sub.current_period_end &&
-        new Date(sub.current_period_end) > new Date()))
-  );
+  const isPro =
+    isAdmin ||
+    !!(
+      sub &&
+      ((["active", "trialing"].includes(sub.status) &&
+        (!sub.current_period_end ||
+          new Date(sub.current_period_end) > new Date())) ||
+        (sub.status === "canceled" &&
+          sub.current_period_end &&
+          new Date(sub.current_period_end) > new Date()))
+    );
 
-  return { isPro, subscription: sub, isLoading: query.isLoading, refetch: query.refetch };
+  return { isPro, isAdmin, subscription: sub, isLoading: query.isLoading, refetch: query.refetch };
 }

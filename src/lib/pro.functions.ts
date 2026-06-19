@@ -30,28 +30,37 @@ export const generatePostContent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<GenerateResult> => {
     const { supabase, userId } = context;
 
-    // Verify active Pro subscription.
-    const { data: pro } = await supabase
-      .from("pro_subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", userId)
-      .eq("environment", data.environment)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Admins always have full access — bypass the Pro check.
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
 
-    const active =
-      pro &&
-      ((["active", "trialing"].includes(pro.status) &&
-        (!pro.current_period_end ||
-          new Date(pro.current_period_end) > new Date())) ||
-        (pro.status === "canceled" &&
-          pro.current_period_end &&
-          new Date(pro.current_period_end) > new Date()));
+    if (!isAdmin) {
+      // Verify active Pro subscription.
+      const { data: pro } = await supabase
+        .from("pro_subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", userId)
+        .eq("environment", data.environment)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (!active) {
-      return { error: "ViralSnap Pro is required to use the AI generators." };
+      const active =
+        pro &&
+        ((["active", "trialing"].includes(pro.status) &&
+          (!pro.current_period_end ||
+            new Date(pro.current_period_end) > new Date())) ||
+          (pro.status === "canceled" &&
+            pro.current_period_end &&
+            new Date(pro.current_period_end) > new Date()));
+
+      if (!active) {
+        return { error: "ViralSnap Pro is required to use the AI generators." };
+      }
     }
+
 
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) return { error: "AI is not configured." };
