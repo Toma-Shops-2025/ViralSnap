@@ -37,6 +37,7 @@ import {
   requestCreatorPayout,
 } from "@/lib/connect.functions";
 import { toast } from "sonner";
+import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 
 export const Route = createFileRoute("/earnings")({
   head: () => ({ meta: [{ title: "Earnings — ViralSnap" }] }),
