@@ -154,6 +154,7 @@ function EarningsPage() {
       </header>
 
       <div className="mx-auto max-w-md space-y-6 px-4 py-4">
+        <PayoutSetupBanner />
         {/* cash card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-ember p-6 shadow-glow">
           <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
