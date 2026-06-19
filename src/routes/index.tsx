@@ -1,10 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Sparkles, Radio, Bell } from "lucide-react";
-import { fetchFeedPage, fetchFollowingFeedPage, type FeedVideo } from "@/lib/feed";
-import { reconcileStuckVideos } from "@/lib/mux.functions";
+import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
