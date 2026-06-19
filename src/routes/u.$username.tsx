@@ -112,9 +112,12 @@ function ProfilePage() {
   const [showGift, setShowGift] = useState(false);
   const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
+  const loaderData = Route.useLoaderData();
+
   const { data, isLoading } = useQuery({
     queryKey: ["profile", username, user?.id],
     queryFn: () => fetchProfileData(username, user?.id),
+    initialData: loaderData ? { ...loaderData, isFollowing: false } : undefined,
   });
 
   const creatorId = data?.profile.id;
