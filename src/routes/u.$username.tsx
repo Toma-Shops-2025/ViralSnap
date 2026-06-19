@@ -15,10 +15,54 @@ import { compact } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { PayoutSetupBanner } from "@/components/payout-setup-banner";
+import { getPublicProfile } from "@/lib/profile.functions";
 
 export const Route = createFileRoute("/u/$username")({
-  head: () => ({ meta: [{ title: "Profile — ViralSnap" }] }),
+  // SSR the public profile so the per-creator URLs we register with Stripe
+  // Connect return crawlable HTML with real name/bio metadata.
+  loader: ({ params }) => getPublicProfile({ data: { username: params.username } }),
+  head: ({ loaderData }) => {
+    const p = loaderData?.profile;
+    if (!p) return { meta: [{ title: "Creator — ViralSnap" }] };
+    const title = `${p.display_name} (@${p.username}) — ViralSnap`;
+    const description =
+      p.bio && p.bio.trim()
+        ? p.bio.trim().slice(0, 160)
+        : `Watch ${p.display_name}'s short videos and support them on ViralSnap.`;
+    const url = `https://viralsnap.online/u/${p.username}`;
+    const image = p.avatar_url ?? undefined;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "profile" },
+        { property: "og:url", content: url },
+        ...(image ? [{ property: "og:image", content: image }] : []),
+        { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        ...(image ? [{ name: "twitter:image", content: image }] : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   component: ProfilePage,
+  notFoundComponent: () => (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <Flame className="h-10 w-10 text-primary" />
+      <p className="font-display text-lg font-bold">Creator not found</p>
+      <Link to="/" className="text-sm text-primary">Back to feed</Link>
+    </div>
+  ),
+  errorComponent: () => (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <Flame className="h-10 w-10 text-primary" />
+      <p className="font-display text-lg font-bold">Couldn’t load this profile</p>
+      <Link to="/" className="text-sm text-primary">Back to feed</Link>
+    </div>
+  ),
 });
 
 type Vid = Tables<"videos">;
