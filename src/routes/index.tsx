@@ -1,10 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Sparkles, Radio, Bell } from "lucide-react";
-import { fetchFeedPage, fetchFollowingFeedPage, type FeedVideo } from "@/lib/feed";
-import { reconcileStuckVideos } from "@/lib/mux.functions";
+import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,7 +35,7 @@ function FeedPage() {
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
       queryKey: ["feed", tab, user?.id],
       initialPageParam: 0,
@@ -46,21 +44,8 @@ function FeedPage() {
       getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     });
 
-  // Safety net: publish any videos whose Mux webhook never arrived, then refresh.
-  const reconcile = useServerFn(reconcileStuckVideos);
-  useEffect(() => {
-    let cancelled = false;
-    reconcile({ data: undefined })
-      .then((res) => {
-        if (!cancelled && res?.published > 0) void refetch();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [reconcile, refetch]);
-
   const sentinelRef = useRef<HTMLDivElement>(null);
+
 
   const items = useMemo(() => {
     const pages = data?.pages ?? [];

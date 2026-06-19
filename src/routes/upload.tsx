@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
-import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
 import { generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,8 +50,6 @@ function UploadPage() {
   const [productUrl, setProductUrl] = useState("");
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
-  const startMuxUpload = useServerFn(createMuxDirectUpload);
-  const finalizeUpload = useServerFn(finalizeMuxUpload);
   const generate = useServerFn(generatePostContent);
 
   useEffect(() => {
@@ -115,59 +112,52 @@ function UploadPage() {
 
       const finalTitle = (title.trim() || caption.slice(0, 80)).slice(0, 80);
 
-      // 1. Create the video row in a processing state (no media URL yet).
-      const { data: inserted, error: insErr } = await supabase
+      // 1. Grab a poster frame + duration from the chosen file (best-effort).
+      const meta = await captureVideoPoster(file).catch(() => null);
+
+      // 2. Upload the raw video straight to Cloud Storage — no external host,
+      //    no encoding queue, so it's live the moment the upload finishes.
+      const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const mediaPath = `${user.id}/${crypto.randomUUID()}.${ext || "mp4"}`;
+      const { error: upErr } = await supabase.storage
         .from("videos")
-        .insert({
-          creator_id: user.id,
-          title: finalTitle,
-          caption,
-          media_url: null,
-          tags: tagList,
-          status: "processing",
-          mux_asset_status: "preparing",
-          is_affiliate: hasProduct,
-          product_title: hasProduct ? productTitle || null : null,
-          product_url: hasProduct ? productUrl || null : null,
-          product_cta: hasProduct ? productCta || null : null,
-        })
-        .select("id")
-        .single();
-      if (insErr || !inserted) throw insErr ?? new Error("Could not create post");
+        .upload(mediaPath, file, {
+          contentType: file.type || "video/mp4",
+          upsert: false,
+        });
+      if (upErr) throw new Error(upErr.message);
+      const mediaUrl = supabase.storage.from("videos").getPublicUrl(mediaPath).data.publicUrl;
 
-      // 2. Ask Mux for a one-time direct-upload URL linked to this row.
-      const result = await startMuxUpload({ data: { videoId: inserted.id } });
-      if ("error" in result) {
-        await supabase.from("videos").delete().eq("id", inserted.id);
-        throw new Error(result.error);
-      }
-
-      // 3. Upload the raw file straight to Mux.
-      const putRes = await fetch(result.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type || "video/mp4" },
-        body: file,
-      });
-      if (!putRes.ok) {
-        await supabase.from("videos").delete().eq("id", inserted.id);
-        throw new Error("Upload to Mux failed");
-      }
-
-      // 4. Publish without relying on the dashboard webhook: poll Mux for the
-      //    asset to finish encoding, then the server flips it to published.
-      void (async () => {
-        for (let attempt = 0; attempt < 40; attempt++) {
-          await new Promise((r) => setTimeout(r, 3000));
-          try {
-            const res = await finalizeUpload({ data: { videoId: inserted.id } });
-            if (res.status === "ready" || res.status === "errored") break;
-          } catch {
-            // keep polling; the safety-net reconcile will catch it otherwise
-          }
+      // 3. Upload the poster to the covers bucket (optional, for a clean first frame).
+      let coverUrl: string | null = null;
+      if (meta?.posterBlob) {
+        const coverPath = `${user.id}/${crypto.randomUUID()}.jpg`;
+        const { error: covErr } = await supabase.storage
+          .from("covers")
+          .upload(coverPath, meta.posterBlob, { contentType: "image/jpeg", upsert: false });
+        if (!covErr) {
+          coverUrl = supabase.storage.from("covers").getPublicUrl(coverPath).data.publicUrl;
         }
-      })();
+      }
 
-      toast.success("Uploaded! 🔥 Your video is processing and will go live in a moment.");
+      // 4. Create the post — published instantly, plays directly from storage.
+      const { error: insErr } = await supabase.from("videos").insert({
+        creator_id: user.id,
+        title: finalTitle,
+        caption,
+        media_url: mediaUrl,
+        cover_url: coverUrl,
+        duration: meta?.duration ?? 0,
+        tags: tagList,
+        status: "published",
+        is_affiliate: hasProduct,
+        product_title: hasProduct ? productTitle || null : null,
+        product_url: hasProduct ? productUrl || null : null,
+        product_cta: hasProduct ? productCta || null : null,
+      });
+      if (insErr) throw new Error(insErr.message);
+
+      toast.success("Posted! 🔥 Your video is live.");
       navigate({ to: "/" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
@@ -424,4 +414,63 @@ function UploadPage() {
       <BottomNav />
     </div>
   );
+}
+
+/**
+ * Best-effort: grab the first frame of the chosen video as a JPEG poster and
+ * read its duration, entirely client-side. Returns null on any failure so the
+ * upload still succeeds without a cover.
+ */
+async function captureVideoPoster(
+  file: File,
+): Promise<{ posterBlob: Blob | null; duration: number } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.src = url;
+
+    const cleanup = () => URL.revokeObjectURL(url);
+    const fail = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    video.onloadedmetadata = () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      // Seek a touch past the very start to avoid a black first frame.
+      const target = Math.min(0.1, duration || 0.1);
+      const finish = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth || 720;
+          canvas.height = video.videoHeight || 1280;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve({ posterBlob: null, duration });
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(
+            (blob) => {
+              cleanup();
+              resolve({ posterBlob: blob, duration });
+            },
+            "image/jpeg",
+            0.8,
+          );
+        } catch {
+          fail();
+        }
+      };
+      video.onseeked = finish;
+      try {
+        video.currentTime = target;
+      } catch {
+        finish();
+      }
+    };
+    video.onerror = fail;
+    // Safety timeout so a stubborn file never hangs the upload.
+    setTimeout(fail, 8000);
+  });
 }
