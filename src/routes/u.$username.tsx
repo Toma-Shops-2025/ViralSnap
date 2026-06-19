@@ -323,7 +323,7 @@ function ProfilePage() {
         )}
         <div className="grid grid-cols-3 gap-1">
 
-          {videos.map((v) => (
+          {videos.map((v: Vid) => (
             <div
               key={v.id}
               className="relative aspect-[9/14] overflow-hidden rounded-lg bg-card"
