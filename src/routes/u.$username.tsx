@@ -14,6 +14,7 @@ import { SUPPORTER_PRICE_LABEL } from "@/lib/subscriptions";
 import { compact } from "@/lib/format";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 
 export const Route = createFileRoute("/u/$username")({
   head: () => ({ meta: [{ title: "Profile — ViralSnap" }] }),
@@ -268,7 +269,13 @@ function ProfilePage() {
 
 
       <div className="mx-auto mt-6 max-w-2xl px-1">
+        {isMe && (
+          <div className="mb-4 px-1">
+            <PayoutSetupBanner returnPath={`/u/${username}`} />
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-1">
+
           {videos.map((v) => (
             <div
               key={v.id}
