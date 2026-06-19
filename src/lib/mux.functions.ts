@@ -42,6 +42,13 @@ export const createMuxDirectUpload = createServerFn({ method: "POST" })
       return { uploadUrl };
     } catch (err) {
       console.error("Mux direct upload error:", err);
+      const msg = err instanceof Error ? err.message : "";
+      if (/limited to \d+ assets|asset limit|exceeding this limit/i.test(msg)) {
+        return {
+          error:
+            "Your video hosting plan has reached its upload limit. Remove some older videos or upgrade your Mux plan to post more.",
+        };
+      }
       return { error: "Could not start video upload" };
     }
   });
