@@ -45,4 +45,3 @@ export function useProSubscription() {
 
   return { isPro, isAdmin, subscription: sub, isLoading: query.isLoading, refetch: query.refetch };
 }
-}
