@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsAdmin } from "@/hooks/use-admin";
 
 /**
  * Reads the current user's ViralSnap Pro status from the pro_subscriptions
