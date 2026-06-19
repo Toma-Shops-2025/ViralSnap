@@ -415,3 +415,62 @@ function UploadPage() {
     </div>
   );
 }
+
+/**
+ * Best-effort: grab the first frame of the chosen video as a JPEG poster and
+ * read its duration, entirely client-side. Returns null on any failure so the
+ * upload still succeeds without a cover.
+ */
+async function captureVideoPoster(
+  file: File,
+): Promise<{ posterBlob: Blob | null; duration: number } | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.src = url;
+
+    const cleanup = () => URL.revokeObjectURL(url);
+    const fail = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    video.onloadedmetadata = () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      // Seek a touch past the very start to avoid a black first frame.
+      const target = Math.min(0.1, duration || 0.1);
+      const finish = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth || 720;
+          canvas.height = video.videoHeight || 1280;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve({ posterBlob: null, duration });
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(
+            (blob) => {
+              cleanup();
+              resolve({ posterBlob: blob, duration });
+            },
+            "image/jpeg",
+            0.8,
+          );
+        } catch {
+          fail();
+        }
+      };
+      video.onseeked = finish;
+      try {
+        video.currentTime = target;
+      } catch {
+        finish();
+      }
+    };
+    video.onerror = fail;
+    // Safety timeout so a stubborn file never hangs the upload.
+    setTimeout(fail, 8000);
+  });
+}
