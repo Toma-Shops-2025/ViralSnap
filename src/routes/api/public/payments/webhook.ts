@@ -151,6 +151,27 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
     .eq("environment", env);
 }
 
+// ============ Connect onboarding status ============
+// Fires when a connected account finishes onboarding or its capabilities
+// change. We mirror payouts_enabled onto the creator's profile so the app
+// can hide the "set up payouts" banner without a live Stripe round-trip.
+async function handleAccountUpdated(account: any) {
+  const userId = account.metadata?.userId;
+  const payoutsEnabled = !!account.payouts_enabled;
+
+  const query = getSupabase()
+    .from("profiles" as never)
+    .update({ payouts_enabled: payoutsEnabled } as never);
+
+  // Prefer the userId stamped in account metadata; fall back to matching the
+  // stored account id so legacy accounts still update.
+  if (userId) {
+    await query.eq("id", userId);
+  } else {
+    await query.eq("stripe_connect_account_id", account.id);
+  }
+}
+
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
 
@@ -164,6 +185,9 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       break;
     case "customer.subscription.deleted":
       await handleSubscriptionDeleted(event.data.object, env);
+      break;
+    case "account.updated":
+      await handleAccountUpdated(event.data.object);
       break;
     default:
       console.log("Unhandled event:", event.type);
