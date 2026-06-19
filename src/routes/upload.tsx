@@ -50,8 +50,6 @@ function UploadPage() {
   const [productUrl, setProductUrl] = useState("");
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
-  const startMuxUpload = useServerFn(createMuxDirectUpload);
-  const finalizeUpload = useServerFn(finalizeMuxUpload);
   const generate = useServerFn(generatePostContent);
 
   useEffect(() => {
