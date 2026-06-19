@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { supabase } from "@/integrations/supabase/client";
-import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
 import { generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/use-auth";
