@@ -61,18 +61,38 @@ export const createConnectOnboardingLink = createServerFn({ method: "POST" })
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("stripe_connect_account_id")
+        .select("stripe_connect_account_id, username, display_name, bio")
         .eq("id", userId)
         .maybeSingle();
 
       let accountId = profile?.stripe_connect_account_id as string | null | undefined;
 
+      // Each creator's public, crawlable profile — required by Stripe for
+      // marketplace/Connect verification.
+      const profileUrl = profile?.username
+        ? `https://viralsnap.online/u/${profile.username}`
+        : "https://viralsnap.online";
+      const businessName = profile?.display_name || profile?.username || "ViralSnap creator";
+      const productDescription =
+        (profile?.bio && profile.bio.trim()) ||
+        "Short-form video creator earning tips, gifts and supporter subscriptions on ViralSnap.";
+
+      const businessProfile = {
+        url: profileUrl,
+        name: businessName,
+        product_description: productDescription,
+      };
+
       if (!accountId) {
         const account = await stripe.accounts.create({
           type: "express",
           country: "US",
+          business_type: "individual",
           ...(data.email && { email: data.email }),
+          // Transfers-only payout model (separate charges & transfers); the
+          // platform collects payments, then transfers earnings on payout.
           capabilities: { transfers: { requested: true } },
+          business_profile: businessProfile,
           metadata: { userId },
         });
         accountId = account.id;
@@ -80,6 +100,15 @@ export const createConnectOnboardingLink = createServerFn({ method: "POST" })
           .from("profiles")
           .update({ stripe_connect_account_id: accountId })
           .eq("id", userId);
+      } else {
+        // Backfill business_profile.url on accounts created before this was set.
+        try {
+          await stripe.accounts.update(accountId, {
+            business_profile: businessProfile,
+          });
+        } catch {
+          // Non-fatal: onboarding can still proceed.
+        }
       }
 
       const link = await stripe.accountLinks.create({
