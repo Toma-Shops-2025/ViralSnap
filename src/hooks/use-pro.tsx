@@ -11,6 +11,7 @@ import { useIsAdmin } from "@/hooks/use-admin";
  */
 export function useProSubscription() {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const query = useQuery({
     queryKey: ["pro-subscription", user?.id],
@@ -30,15 +31,18 @@ export function useProSubscription() {
   });
 
   const sub = query.data;
-  const isPro = !!(
-    sub &&
-    ((["active", "trialing"].includes(sub.status) &&
-      (!sub.current_period_end ||
-        new Date(sub.current_period_end) > new Date())) ||
-      (sub.status === "canceled" &&
-        sub.current_period_end &&
-        new Date(sub.current_period_end) > new Date()))
-  );
+  const isPro =
+    isAdmin ||
+    !!(
+      sub &&
+      ((["active", "trialing"].includes(sub.status) &&
+        (!sub.current_period_end ||
+          new Date(sub.current_period_end) > new Date())) ||
+        (sub.status === "canceled" &&
+          sub.current_period_end &&
+          new Date(sub.current_period_end) > new Date()))
+    );
 
-  return { isPro, subscription: sub, isLoading: query.isLoading, refetch: query.refetch };
+  return { isPro, isAdmin, subscription: sub, isLoading: query.isLoading, refetch: query.refetch };
+}
 }
