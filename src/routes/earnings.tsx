@@ -36,7 +36,7 @@ import {
   createConnectOnboardingLink,
   requestCreatorPayout,
 } from "@/lib/connect.functions";
-import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
+import { PayoutOnboardDialog } from "@/components/payout-onboard-dialog";
 import { toast } from "sonner";
 import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 
@@ -56,6 +56,7 @@ function EarningsPage() {
   const [coinsToCashOut, setCoinsToCashOut] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
   const statusFn = useServerFn(getConnectStatus);
   const onboardFn = useServerFn(createConnectOnboardingLink);
@@ -86,7 +87,6 @@ function EarningsPage() {
   const canPayout = balance >= MIN_PAYOUT_COINS;
 
   const handleConnect = async () => {
-    const payoutTab = openPendingExternalWindow("Opening payout setup…");
     setConnecting(true);
     try {
       const res = await onboardFn({
@@ -96,16 +96,11 @@ function EarningsPage() {
           environment: getStripeEnvironment(),
         },
       });
-      if ("error" in res) {
-        payoutTab?.close();
-        throw new Error(res.error);
-      }
-      // Open the tab synchronously before awaiting, then send it to onboarding.
-      if (!sendPendingExternalWindow(payoutTab, res.url)) window.location.href = res.url;
-      setConnecting(false);
+      if ("error" in res) throw new Error(res.error);
+      setOnboardUrl(res.url);
     } catch (err) {
-      payoutTab?.close();
       toast.error(err instanceof Error ? err.message : "Could not start onboarding");
+    } finally {
       setConnecting(false);
     }
   };
@@ -300,6 +295,8 @@ function EarningsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PayoutOnboardDialog url={onboardUrl} onClose={() => setOnboardUrl(null)} />
 
       <BottomNav />
     </div>

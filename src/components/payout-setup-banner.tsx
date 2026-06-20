@@ -5,7 +5,7 @@ import { Banknote, Loader2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { getConnectStatus, createConnectOnboardingLink } from "@/lib/connect.functions";
-import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
+import { PayoutOnboardDialog } from "@/components/payout-onboard-dialog";
 import { toast } from "sonner";
 
 /**
@@ -17,6 +17,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
   const { user } = useAuth();
   const [dismissed, setDismissed] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
   const statusFn = useServerFn(getConnectStatus);
   const onboardFn = useServerFn(createConnectOnboardingLink);
@@ -34,7 +35,6 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
   if (!user || dismissed || !connect || connect.payoutsEnabled) return null;
 
   const handleConnect = async () => {
-    const payoutTab = openPendingExternalWindow("Opening payout setup…");
     setConnecting(true);
     try {
       const res = await onboardFn({
@@ -44,21 +44,17 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
           environment: getStripeEnvironment(),
         },
       });
-      if ("error" in res) {
-        payoutTab?.close();
-        throw new Error(res.error);
-      }
-      // Open the tab synchronously before awaiting, then send it to onboarding.
-      if (!sendPendingExternalWindow(payoutTab, res.url)) window.location.href = res.url;
-      setConnecting(false);
+      if ("error" in res) throw new Error(res.error);
+      setOnboardUrl(res.url);
     } catch (err) {
-      payoutTab?.close();
       toast.error(err instanceof Error ? err.message : "Could not start payout setup");
+    } finally {
       setConnecting(false);
     }
   };
 
   return (
+    <>
     <div className="relative overflow-hidden rounded-2xl bg-gradient-ember p-4 shadow-glow">
       <button
         onClick={() => setDismissed(true)}
@@ -87,5 +83,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
         </div>
       </div>
     </div>
+    <PayoutOnboardDialog url={onboardUrl} onClose={() => setOnboardUrl(null)} />
+    </>
   );
 }
