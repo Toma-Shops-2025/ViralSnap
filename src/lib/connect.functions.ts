@@ -132,8 +132,8 @@ type PayoutResult =
 export const requestCreatorPayout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { coins: number; environment: StripeEnv }) => {
-    if (!Number.isInteger(data.coins) || data.coins < 10000) {
-      throw new Error("Minimum payout is 10,000 coins");
+    if (!Number.isInteger(data.coins) || data.coins < 1000) {
+      throw new Error("Minimum payout is 1,000 coins");
     }
     return data;
   })
