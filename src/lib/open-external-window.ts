@@ -5,7 +5,8 @@ function applyShellStyles(document: Document) {
   document.body.style.margin = "0";
   document.body.style.background = "#090a14";
   document.body.style.color = "#fff";
-  document.body.style.fontFamily = "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  document.body.style.fontFamily =
+    "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
   document.body.style.textAlign = "center";
 }
 
