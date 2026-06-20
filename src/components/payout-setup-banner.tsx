@@ -5,7 +5,7 @@ import { Banknote, Loader2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { getConnectStatus, createConnectOnboardingLink } from "@/lib/connect.functions";
-import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
+import { PayoutOnboardDialog } from "@/components/payout-onboard-dialog";
 import { toast } from "sonner";
 
 /**
