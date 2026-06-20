@@ -8,6 +8,7 @@ import {
   getConnectStatus,
   createConnectOnboardingLink,
 } from "@/lib/connect.functions";
+import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
 import { toast } from "sonner";
 
 /**
@@ -36,6 +37,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
   if (!user || dismissed || !connect || connect.payoutsEnabled) return null;
 
   const handleConnect = async () => {
+    const payoutTab = openPendingExternalWindow("Opening payout setup…");
     setConnecting(true);
     try {
       const res = await onboardFn({
@@ -45,13 +47,15 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
           environment: getStripeEnvironment(),
         },
       });
-      if ("error" in res) throw new Error(res.error);
-      // Stripe Connect onboarding can't load inside an iframe (preview), so
-      // open it in a new tab; fall back to a full redirect if blocked.
-      const win = window.open(res.url, "_blank", "noopener,noreferrer");
-      if (!win) window.location.href = res.url;
+      if ("error" in res) {
+        payoutTab?.close();
+        throw new Error(res.error);
+      }
+      // Open the tab synchronously before awaiting, then send it to onboarding.
+      if (!sendPendingExternalWindow(payoutTab, res.url)) window.location.href = res.url;
       setConnecting(false);
     } catch (err) {
+      payoutTab?.close();
       toast.error(err instanceof Error ? err.message : "Could not start payout setup");
       setConnecting(false);
     }
