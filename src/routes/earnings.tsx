@@ -36,7 +36,7 @@ import {
   createConnectOnboardingLink,
   requestCreatorPayout,
 } from "@/lib/connect.functions";
-import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
+import { PayoutOnboardDialog } from "@/components/payout-onboard-dialog";
 import { toast } from "sonner";
 import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 
