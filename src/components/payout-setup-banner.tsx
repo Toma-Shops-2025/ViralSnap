@@ -4,10 +4,7 @@ import { useState } from "react";
 import { Banknote, Loader2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getStripeEnvironment } from "@/lib/stripe";
-import {
-  getConnectStatus,
-  createConnectOnboardingLink,
-} from "@/lib/connect.functions";
+import { getConnectStatus, createConnectOnboardingLink } from "@/lib/connect.functions";
 import { openPendingExternalWindow, sendPendingExternalWindow } from "@/lib/open-external-window";
 import { toast } from "sonner";
 
@@ -75,9 +72,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
           <Banknote className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <p className="font-display text-sm font-bold text-white">
-            Finish your payout setup
-          </p>
+          <p className="font-display text-sm font-bold text-white">Finish your payout setup</p>
           <p className="mt-0.5 text-xs text-white/85">
             Connect a payout account so you can cash out your ViralCoins earnings.
           </p>
