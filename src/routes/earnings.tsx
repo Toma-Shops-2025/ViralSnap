@@ -47,7 +47,7 @@ export const Route = createFileRoute("/earnings")({
 
 // Creators cash out coins at 1000 coins = $5 (= $0.005 / coin).
 const COIN_TO_USD = 5 / 1000;
-const MIN_PAYOUT_COINS = 10000;
+const MIN_PAYOUT_COINS = 1000;
 
 function EarningsPage() {
   const { user, profile, loading, refreshProfile } = useAuth();
@@ -193,7 +193,7 @@ function EarningsPage() {
                 : "Request payout"}
           </button>
           <p className="mt-2 text-center text-[11px] text-white/60">
-            Min {MIN_PAYOUT_COINS.toLocaleString()} coins · 1,000 coins = $5.00
+            Min {MIN_PAYOUT_COINS.toLocaleString()} coins = $5.00
           </p>
         </div>
 
