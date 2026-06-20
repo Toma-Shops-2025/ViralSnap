@@ -56,6 +56,7 @@ function EarningsPage() {
   const [coinsToCashOut, setCoinsToCashOut] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
   const statusFn = useServerFn(getConnectStatus);
   const onboardFn = useServerFn(createConnectOnboardingLink);
