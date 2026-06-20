@@ -83,5 +83,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
         </div>
       </div>
     </div>
+    <PayoutOnboardDialog url={onboardUrl} onClose={() => setOnboardUrl(null)} />
+    </>
   );
 }
