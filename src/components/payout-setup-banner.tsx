@@ -46,7 +46,11 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
         },
       });
       if ("error" in res) throw new Error(res.error);
-      window.location.href = res.url;
+      // Stripe Connect onboarding can't load inside an iframe (preview), so
+      // open it in a new tab; fall back to a full redirect if blocked.
+      const win = window.open(res.url, "_blank", "noopener,noreferrer");
+      if (!win) window.location.href = res.url;
+      setConnecting(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start payout setup");
       setConnecting(false);
@@ -76,7 +80,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
           <button
             onClick={handleConnect}
             disabled={connecting}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-primary transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {connecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Set up payouts
