@@ -138,6 +138,15 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
       ref={containerRef}
       className="relative h-[100dvh] w-full snap-start overflow-hidden bg-black"
     >
+      {/* blurred backdrop fills letterbox space behind the contained video */}
+      {posterUrl && (
+        <div
+          aria-hidden
+          className="absolute inset-0 scale-110 bg-cover bg-center blur-2xl brightness-50"
+          style={{ backgroundImage: `url(${posterUrl})` }}
+        />
+      )}
+
       <video
         ref={videoRef}
         poster={posterUrl ?? undefined}
@@ -146,8 +155,9 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
         playsInline
         preload={nearView ? "metadata" : "none"}
         onClick={() => setPaused((p) => !p)}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover md:object-contain"
       />
+
 
 
       {/* dark gradient for legibility */}
