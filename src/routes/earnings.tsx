@@ -95,7 +95,11 @@ function EarningsPage() {
         },
       });
       if ("error" in res) throw new Error(res.error);
-      window.location.href = res.url;
+      // Stripe Connect onboarding can't load inside an iframe (preview), so
+      // open it in a new tab; fall back to a full redirect if blocked.
+      const win = window.open(res.url, "_blank", "noopener,noreferrer");
+      if (!win) window.location.href = res.url;
+      setConnecting(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start onboarding");
       setConnecting(false);
