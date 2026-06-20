@@ -54,6 +54,7 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
   };
 
   return (
+    <>
     <div className="relative overflow-hidden rounded-2xl bg-gradient-ember p-4 shadow-glow">
       <button
         onClick={() => setDismissed(true)}
