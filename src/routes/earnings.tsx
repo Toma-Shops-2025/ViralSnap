@@ -296,6 +296,8 @@ function EarningsPage() {
         </DialogContent>
       </Dialog>
 
+      <PayoutOnboardDialog url={onboardUrl} onClose={() => setOnboardUrl(null)} />
+
       <BottomNav />
     </div>
   );
