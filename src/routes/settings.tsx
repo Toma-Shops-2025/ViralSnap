@@ -162,6 +162,14 @@ function SettingsPage() {
           </section>
         )}
 
+        {/* Appearance */}
+        <section>
+          <h2 className="mb-3 font-display text-lg font-bold">Appearance</h2>
+          <ThemeToggle />
+        </section>
+
+
+
         {/* Danger zone */}
         <section>
           <h2 className="mb-3 font-display text-lg font-bold text-muted-foreground">
