@@ -30,6 +30,7 @@ function AuthPage() {
   const [ageOk, setAgeOk] = useState(false);
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (user) navigate({ to: "/", replace: true });
