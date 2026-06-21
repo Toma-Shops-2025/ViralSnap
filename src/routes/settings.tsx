@@ -31,6 +31,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { EditProfileDialog } from "@/components/edit-profile-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme, type Theme } from "@/hooks/use-theme";
 import { getStripeEnvironment } from "@/lib/stripe";
 import {
   createSubscriptionPortalSession,
