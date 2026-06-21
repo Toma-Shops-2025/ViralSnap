@@ -257,6 +257,37 @@ type LegalRoute =
   | "/account-deletion"
   | "/contact";
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: Theme; label: string; icon: typeof Sun }[] = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2">
+      {options.map(({ value, label, icon: Icon }) => {
+        const active = theme === value;
+        return (
+          <button
+            key={value}
+            onClick={() => setTheme(value)}
+            aria-pressed={active}
+            className={`flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-xs font-semibold transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-5 w-5" />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function LegalLink({ to, label }: { to: LegalRoute; label: string }) {
   return (
     <Link
