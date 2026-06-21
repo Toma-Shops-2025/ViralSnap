@@ -11,6 +11,9 @@ import {
   Loader2,
   Heart,
   Share2,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
