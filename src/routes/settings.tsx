@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,8 @@ import {
   createSubscriptionPortalSession,
 } from "@/lib/payments.functions";
 import { deleteAccount } from "@/lib/account.functions";
+import { GooglePlayButton } from "@/components/google-play-button";
+import { PLAY_STORE_URL, RATE_REWARD_COINS } from "@/lib/app-links";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -45,11 +48,36 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [rating, setRating] = useState(false);
+
+  const handleRate = async () => {
+    // Open the Play Store listing so the user can leave a review.
+    window.open(PLAY_STORE_URL, "_blank", "noopener,noreferrer");
+    if (!user || profile?.rate_rewarded) return;
+    setRating(true);
+    try {
+      const { data, error } = await supabase.rpc("claim_rate_reward");
+      if (error) throw error;
+      const res = data as { already_claimed: boolean; reward?: number };
+      if (!res.already_claimed) {
+        toast.success(`+${res.reward ?? RATE_REWARD_COINS} ViralCoins! 🎉`, {
+          description: "Thanks for rating ViralSnap.",
+        });
+        await refreshProfile();
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not claim reward");
+    } finally {
+      setRating(false);
+    }
+  };
+
+
 
   const portalFn = useServerFn(createSubscriptionPortalSession);
   const deleteFn = useServerFn(deleteAccount);
@@ -167,6 +195,40 @@ function SettingsPage() {
           <h2 className="mb-3 font-display text-lg font-bold">Appearance</h2>
           <ThemeToggle />
         </section>
+
+        {/* Get the app */}
+        <section>
+          <h2 className="mb-3 font-display text-lg font-bold">Get the app</h2>
+          <div className="space-y-2">
+            <button
+              onClick={handleRate}
+              disabled={rating}
+              className="flex w-full items-center gap-3 rounded-2xl border border-gold/40 bg-card p-4 text-left transition-colors hover:border-gold/70 disabled:opacity-50"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 text-gold">
+                {rating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
+              </span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold">Rate ViralSnap</span>
+                <span className="block text-xs text-muted-foreground">
+                  {profile?.rate_rewarded
+                    ? "Thanks for rating! Reward claimed."
+                    : `Leave a review and earn ${RATE_REWARD_COINS} ViralCoins`}
+                </span>
+              </span>
+              {!profile?.rate_rewarded && (
+                <span className="rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
+                  +{RATE_REWARD_COINS}
+                </span>
+              )}
+            </button>
+            <div className="flex justify-center pt-1">
+              <GooglePlayButton />
+            </div>
+          </div>
+        </section>
+
+
 
 
 

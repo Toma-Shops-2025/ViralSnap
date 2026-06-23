@@ -5,6 +5,7 @@ import { Flame, Sparkles, Radio, Bell } from "lucide-react";
 import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
+import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -125,6 +126,7 @@ function FeedPage() {
       )}
 
       <BottomNav />
+      <OnboardingWalkthrough />
     </div>
   );
 }

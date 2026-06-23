@@ -710,7 +710,9 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          link_url: string | null
           payouts_enabled: boolean
+          rate_rewarded: boolean
           stripe_connect_account_id: string | null
           total_earned: number
           total_spent: number
@@ -724,7 +726,9 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          link_url?: string | null
           payouts_enabled?: boolean
+          rate_rewarded?: boolean
           stripe_connect_account_id?: string | null
           total_earned?: number
           total_spent?: number
@@ -738,7 +742,9 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          link_url?: string | null
           payouts_enabled?: boolean
+          rate_rewarded?: boolean
           stripe_connect_account_id?: string | null
           total_earned?: number
           total_spent?: number
@@ -995,6 +1001,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_rate_reward: { Args: never; Returns: Json }
       credit_coin_purchase: {
         Args: {
           _amount_cents: number
