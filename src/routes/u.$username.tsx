@@ -1,11 +1,12 @@
 import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake, Share2 } from "lucide-react";
+import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake, Share2, LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BottomNav } from "@/components/bottom-nav";
 import { GiftDialog } from "@/components/gift-dialog";
+import { ProfileVideoDialog } from "@/components/profile-video-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
@@ -110,6 +111,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showGift, setShowGift] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<Vid | null>(null);
   const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   const loaderData = Route.useLoaderData();
@@ -259,6 +261,17 @@ function ProfilePage() {
         <h1 className="mt-3 font-display text-xl font-bold">{profile.display_name}</h1>
         <p className="text-sm text-muted-foreground">@{profile.username}</p>
         {profile.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
+        {profile.link_url && (
+          <a
+            href={profile.link_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex max-w-full items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+          >
+            <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{profile.link_url.replace(/^https?:\/\//, "")}</span>
+          </a>
+        )}
 
         <div className="mt-4 flex gap-6">
           <Stat label="Followers" value={followers} />
@@ -324,9 +337,11 @@ function ProfilePage() {
         <div className="grid grid-cols-3 gap-1">
 
           {videos.map((v: Vid) => (
-            <div
+            <button
               key={v.id}
-              className="relative aspect-[9/14] overflow-hidden rounded-lg bg-card"
+              type="button"
+              onClick={() => setSelectedVideo(v)}
+              className="group relative aspect-[9/14] overflow-hidden rounded-lg bg-card"
             >
               {v.cover_url ? (
                 <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" />
@@ -340,6 +355,9 @@ function ProfilePage() {
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                <Play className="h-8 w-8 fill-white/90 text-white/90 drop-shadow" />
+              </div>
               <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] text-white/90">
                 <span className="flex items-center gap-0.5">
                   <Play className="h-2.5 w-2.5 fill-white" /> {compact(v.view_count)}
@@ -348,13 +366,24 @@ function ProfilePage() {
                   <Heart className="h-2.5 w-2.5 fill-white" /> {compact(v.like_count)}
                 </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
         {videos.length === 0 && (
           <p className="py-16 text-center text-sm text-muted-foreground">No videos yet.</p>
         )}
       </div>
+
+      <ProfileVideoDialog
+        video={selectedVideo}
+        open={!!selectedVideo}
+        onOpenChange={(o) => !o && setSelectedVideo(null)}
+        isOwner={isMe}
+        onChanged={() => {
+          queryClient.invalidateQueries({ queryKey: ["profile", username] });
+          setSelectedVideo(null);
+        }}
+      />
 
       {showGift && (
         <GiftDialog

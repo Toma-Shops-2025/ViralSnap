@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, LinkIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [bio, setBio] = useState(profile?.bio ?? "");
+  const [linkUrl, setLinkUrl] = useState(profile?.link_url ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,12 +66,25 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
       toast.error("Display name can't be empty.");
       return;
     }
+    let link = linkUrl.trim();
+    if (link && !/^https?:\/\//i.test(link)) {
+      link = `https://${link}`;
+    }
+    if (link) {
+      try {
+        new URL(link);
+      } catch {
+        toast.error("Please enter a valid link.");
+        return;
+      }
+    }
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: displayName.trim(),
         bio: bio.trim(),
+        link_url: link || null,
         avatar_url: avatarUrl || null,
       })
       .eq("id", user.id);
@@ -145,6 +159,23 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
               className="mt-1 rounded-xl bg-secondary/40"
             />
             <p className="mt-1 text-right text-xs text-muted-foreground">{bio.length}/160</p>
+          </div>
+          <div>
+            <Label htmlFor="link_url">Link in bio</Label>
+            <div className="relative mt-1">
+              <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="link_url"
+                value={linkUrl}
+                inputMode="url"
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="yourstore.com"
+                className="rounded-xl bg-secondary/40 pl-9"
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Show a clickable link on your profile.
+            </p>
           </div>
         </div>
 
