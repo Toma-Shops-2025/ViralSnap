@@ -17,7 +17,7 @@ function ActivityPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", replace: true });
+    if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
   const { data: items = [], isLoading } = useQuery({

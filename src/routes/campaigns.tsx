@@ -75,7 +75,7 @@ function CampaignsPage() {
             <Briefcase className="h-6 w-6 text-primary" /> Campaigns
           </h1>
           <button
-            onClick={() => (user ? setShowCreate(true) : navigate({ to: "/auth" }))}
+            onClick={() => (user ? setShowCreate(true) : navigate({ to: "/welcome" }))}
             className="flex items-center gap-1.5 rounded-full bg-gradient-fire px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow"
           >
             <Plus className="h-4 w-4" /> Post
@@ -140,7 +140,7 @@ function CampaignsPage() {
               </div>
 
               <Button
-                onClick={() => (user ? setApplyTo(c) : navigate({ to: "/auth" }))}
+                onClick={() => (user ? setApplyTo(c) : navigate({ to: "/welcome" }))}
                 disabled={user?.id === c.brand_id}
                 className="mt-4 w-full rounded-full bg-gradient-fire text-primary-foreground shadow-glow hover:opacity-90"
               >

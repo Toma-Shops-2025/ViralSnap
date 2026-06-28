@@ -22,7 +22,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { PayoutSetupBanner } from "@/components/payout-setup-banner";
 import { getPublicProfile } from "@/lib/profile.functions";
 
-export const Route = createFileRoute("/u/$username")({
+export const Route = createFileRoute("/u/profile")({
   loader: ({ params }) => getPublicProfile({ data: { username: params.username } }),
   head: ({ loaderData }) => {
     const p = loaderData?.profile;
@@ -38,7 +38,7 @@ export const Route = createFileRoute("/u/$username")({
       meta: [
         { title },
         { name: "description", content: description },
-        { property: "og:title", title },
+        { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:type", content: "profile" },
         { property: "og:url", content: url },
@@ -334,44 +334,8 @@ function ProfilePage() {
           <Stat label="Earned" value={profile.total_earned} gold />
         </div>
         <div className="mt-4 flex gap-2">
-          {isMe ? (
-            <Link
-              to="/upload"
-              className="flex-1 rounded-full bg-gradient-fire py-2 text-center text-sm font-semibold text-primary-foreground shadow-glow"
-            >
-              Upload video
-            </Link>
-          ) : (
-            <>
-              <Button
-                onClick={handleFollow}
-                className={`flex-1 rounded-full ${
-                  isFollowing
-                    ? "bg-secondary text-foreground hover:bg-secondary/80"
-                    : "bg-gradient-fire text-primary-foreground shadow-glow hover:opacity-90"
-                }`}
-              >
-                {isFollowing ? "Following" : "Follow"}
-              </Button>
-              <Button
-                onClick={() => setShowGift(true)}
-                variant="outline"
-                className="rounded-full border-gold/50 bg-card text-gold"
-              >
-                <Gift className="h-4 w-4" /> Gift
-              </Button>
-            </>
-          )}
+          {isMe ? <Link to="/upload" className="flex-1 rounded-full bg-gradient-fire py-2 text-center text-sm font-semibold text-primary-foreground shadow-glow">Upload video</Link> : <Button onClick={handleFollow} className={`flex-1 rounded-full ${isFollowing ? "bg-secondary text-foreground" : "bg-gradient-fire text-primary-foreground"}`}>{isFollowing ? "Following" : "Follow"}</Button>}
         </div>
-        {!isMe && (
-          <button
-            onClick={handleSupport}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-ember py-2.5 text-sm font-semibold text-white shadow-glow"
-          >
-            <HeartHandshake className="h-4 w-4" />
-            Support {SUPPORTER_PRICE_LABEL}
-          </button>
-        )}
       </header>
 
       <div className="mx-auto mt-6 max-w-2xl px-1">

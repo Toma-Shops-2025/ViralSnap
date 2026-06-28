@@ -53,7 +53,7 @@ function UploadPage() {
   const generate = useServerFn(generatePostContent);
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", replace: true });
+    if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ function UploadPage() {
   }, [file]);
 
   const upgradeToPro = () => {
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/welcome" });
     openCheckout({
       plan: "pro",
       userId: user.id,
@@ -74,7 +74,7 @@ function UploadPage() {
   };
 
   const handleGenerate = async () => {
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/welcome" });
     if (!isPro) return upgradeToPro();
     if (idea.trim().length < 2) {
       toast.error("Type a short idea first");
@@ -236,17 +236,6 @@ function UploadPage() {
           hidden
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
-
-        <div>
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="A scroll-stopping title"
-            className="mt-1 rounded-xl bg-card"
-          />
-        </div>
 
         {/* AI generator — Pro perk */}
         <div className="rounded-2xl border border-border bg-card p-4">

@@ -96,7 +96,7 @@ function WatchLivePage() {
   const send = async () => {
     const text = draft.trim();
     if (!text) return;
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/welcome" });
     setDraft("");
     const { error } = await supabase.from("live_messages").insert({ stream_id: streamId, user_id: user.id, text });
     if (error) toast.error(error.message);

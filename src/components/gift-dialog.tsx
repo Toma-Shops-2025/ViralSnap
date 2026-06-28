@@ -35,7 +35,7 @@ export function GiftDialog({ open, onOpenChange, receiverId, receiverName, video
   const handleSend = async () => {
     if (!user) {
       onOpenChange(false);
-      navigate({ to: "/auth" });
+      navigate({ to: "/welcome" });
       return;
     }
     if (!gift) return;

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -29,12 +30,18 @@ import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
+import { Route as UProfileRouteImport } from './routes/u.profile'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicMuxWebhookRouteImport } from './routes/api/public/mux/webhook'
 
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -135,6 +142,11 @@ const LiveIndexRoute = LiveIndexRouteImport.update({
   path: '/live/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UProfileRoute = UProfileRouteImport.update({
+  id: '/u/profile',
+  path: '/u/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -183,8 +195,10 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/u/profile': typeof UProfileRoute
   '/live/': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -210,8 +224,10 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/u/profile': typeof UProfileRoute
   '/live': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -238,8 +254,10 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
+  '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
+  '/u/profile': typeof UProfileRoute
   '/live/': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -267,8 +285,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/upload'
     | '/wallet'
+    | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
+    | '/u/profile'
     | '/live/'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -294,8 +314,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/upload'
     | '/wallet'
+    | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
+    | '/u/profile'
     | '/live'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -321,8 +343,10 @@ export interface FileRouteTypes {
     | '/terms'
     | '/upload'
     | '/wallet'
+    | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
+    | '/u/profile'
     | '/live/'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -349,8 +373,10 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
+  WelcomeRoute: typeof WelcomeRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
   UUsernameRoute: typeof UUsernameRoute
+  UProfileRoute: typeof UProfileRoute
   LiveIndexRoute: typeof LiveIndexRoute
   ApiPublicMuxWebhookRoute: typeof ApiPublicMuxWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -359,6 +385,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wallet': {
       id: '/wallet'
       path: '/wallet'
@@ -499,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/profile': {
+      id: '/u/profile'
+      path: '/u/profile'
+      fullPath: '/u/profile'
+      preLoaderRoute: typeof UProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -557,8 +597,10 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
+  WelcomeRoute: WelcomeRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,
   UUsernameRoute: UUsernameRoute,
+  UProfileRoute: UProfileRoute,
   LiveIndexRoute: LiveIndexRoute,
   ApiPublicMuxWebhookRoute: ApiPublicMuxWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,

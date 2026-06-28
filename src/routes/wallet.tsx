@@ -31,7 +31,7 @@ function WalletPage() {
   const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", replace: true });
+    if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
   // Handle return from Stripe checkout
@@ -56,7 +56,7 @@ function WalletPage() {
 
   const handleBuy = (priceId: string) => {
     if (!user) {
-      navigate({ to: "/auth" });
+      navigate({ to: "/welcome" });
       return;
     }
     openCheckout({

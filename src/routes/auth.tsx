@@ -62,10 +62,22 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to ViralSnap! 🔥", {
-          description: "Check your email to confirm, then sign in.",
+
+        // Auto-signin after signup since email confirmation is disabled/not sending
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
-        setMode("signin");
+
+        if (signInError) {
+          toast.success("Account created!", {
+            description: "Please sign in with your new credentials.",
+          });
+          setMode("signin");
+        } else {
+          toast.success("Welcome to ViralSnap! 🔥");
+          navigate({ to: "/", replace: true });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

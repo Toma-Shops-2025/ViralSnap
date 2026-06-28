@@ -70,7 +70,7 @@ export function CommentsSheet({ open, onOpenChange, videoId }: Props) {
   const submit = async () => {
     if (!user) {
       onOpenChange(false);
-      navigate({ to: "/auth" });
+      navigate({ to: "/welcome" });
       return;
     }
     const value = text.trim();

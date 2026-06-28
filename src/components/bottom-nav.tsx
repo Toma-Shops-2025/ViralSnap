@@ -13,7 +13,7 @@ const items = [
 export function BottomNav() {
   const { profile, user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const profileTo = profile ? `/u/${profile.username}` : "/auth";
+  const profileTo = profile ? `/u/${profile.username}` : "/welcome";
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/80 backdrop-blur-xl">
@@ -64,7 +64,7 @@ export function BottomNav() {
             <User
               className={cn(
                 "h-6 w-6",
-                pathname.startsWith("/u/") || (pathname === "/auth" && !user)
+                pathname.startsWith("/u/") || (pathname === "/welcome" && !user)
                   ? "text-primary"
                   : "text-muted-foreground",
               )}

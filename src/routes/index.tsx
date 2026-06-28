@@ -168,7 +168,7 @@ function EmptyFollowing({ signedIn }: { signedIn: boolean }) {
           : "Create an account to build your own personal feed."}
       </p>
       <Link
-        to={signedIn ? "/discover" : "/auth"}
+        to={signedIn ? "/discover" : "/welcome"}
         className="mt-6 rounded-full bg-gradient-fire px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
       >
         {signedIn ? "Discover creators" : "Get started"}

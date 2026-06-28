@@ -43,7 +43,7 @@ function LivePage() {
   const { data } = useQuery({ queryKey: ["live-streams"], queryFn: fetchStreams, refetchInterval: 8000 });
 
   const goLive = async () => {
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/welcome" });
     setStarting(true);
     const { data: stream, error } = await supabase
       .from("live_streams")

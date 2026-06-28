@@ -83,7 +83,7 @@ function SettingsPage() {
   const deleteFn = useServerFn(deleteAccount);
 
   useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth", replace: true });
+    if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
   // Subscriptions this user pays for (supporting creators).

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { Flame, Coins, Heart, Upload, ChevronRight, X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "viralsnap-onboarded";
 
@@ -28,16 +28,26 @@ const slides = [
 ];
 
 export function OnboardingWalkthrough() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
+    // If user logs out, hide the walkthrough immediately
+    if (!user) {
+      setOpen(false);
+      return;
+    }
+
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
+      // Logic: ONLY show if user is logged in AND has not finished onboarding on this device yet
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        setOpen(true);
+      }
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [user]);
 
   const finish = () => {
     try {
@@ -88,13 +98,12 @@ export function OnboardingWalkthrough() {
             Skip
           </button>
           {isLast ? (
-            <Link
-              to="/auth"
+            <button
               onClick={finish}
               className="flex items-center gap-1 rounded-full bg-gradient-fire px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
             >
               Get started
-            </Link>
+            </button>
           ) : (
             <button
               onClick={() => setStep((s) => s + 1)}

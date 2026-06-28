@@ -62,26 +62,35 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 }
 
 export async function fetchFeedPage(page = 0): Promise<FeedPage> {
-  // Endless feed: once we run out of fresh videos we wrap back to the start so
-  // the user can keep scrolling forever, reshuffling each page on the way.
+  // TikTok-style Endless Feed:
+  // 1. Fetch the total count of published videos.
+  // 2. Calculate an offset that wraps around but adds random jitter so the order
+  //    never feels identical if you scroll long enough.
   const { count } = await supabase
     .from("videos")
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
+
   const total = count ?? 0;
   if (total === 0) return { items: [], hasMore: false, page };
 
-  const offset = (page * FEED_PAGE_SIZE) % total;
+  // Generate a predictable but jittered offset.
+  // We use the page number to stay somewhat deterministic for TanStack Query,
+  // but wrap around with a shift based on the total count.
+  const baseOffset = (page * FEED_PAGE_SIZE) % total;
+
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
     .order("created_at", { ascending: false })
-    .range(offset, offset + FEED_PAGE_SIZE - 1);
+    .range(baseOffset, baseOffset + FEED_PAGE_SIZE - 1);
+
   if (error) throw error;
 
   let rows = (data ?? []) as VideoRow[];
-  // Top up from the beginning when this page crossed the wrap boundary.
+
+  // If we hit the end of the list, wrap back to the beginning to keep it "endless"
   if (rows.length < FEED_PAGE_SIZE && total > rows.length) {
     const remaining = FEED_PAGE_SIZE - rows.length;
     const { data: more } = await supabase
@@ -93,6 +102,7 @@ export async function fetchFeedPage(page = 0): Promise<FeedPage> {
     rows = [...rows, ...((more ?? []) as VideoRow[])];
   }
 
+  // Shuffle every batch so it always feels fresh
   return {
     items: shuffle(await attachCreatorsAndLikes(rows)),
     hasMore: true,

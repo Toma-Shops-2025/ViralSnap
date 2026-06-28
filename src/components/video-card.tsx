@@ -107,7 +107,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 
 
   const handleLike = async () => {
-    if (!user) return navigate({ to: "/auth" });
+    if (!user) return navigate({ to: "/welcome" });
     const next = !liked;
     setLiked(next);
     setLikeCount((c) => c + (next ? 1 : -1));
@@ -207,7 +207,12 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 
       {/* right action rail */}
       <div className="absolute bottom-28 right-3 z-20 flex flex-col items-center gap-5 text-white">
-        <Link to="/u/$username" params={{ username: video.creator?.username ?? "" }}>
+        <button
+          onClick={() => {
+            if (!user) return navigate({ to: "/welcome" });
+            navigate({ to: "/u/$username", params: { username: video.creator?.username ?? "" } });
+          }}
+        >
           {video.creator?.avatar_url ? (
             <img
               src={video.creator.avatar_url}
@@ -219,17 +224,23 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
               {(video.creator?.display_name ?? "C").charAt(0).toUpperCase()}
             </div>
           )}
-        </Link>
+        </button>
 
         <RailButton onClick={handleLike} count={likeCount}>
           <Heart className={cn("h-8 w-8", liked && "fill-primary text-primary")} />
         </RailButton>
 
-        <RailButton onClick={() => setShowComments(true)} count={video.comment_count}>
+        <RailButton onClick={() => {
+          if (!user) return navigate({ to: "/welcome" });
+          setShowComments(true);
+        }} count={video.comment_count}>
           <MessageCircle className="h-8 w-8" />
         </RailButton>
 
-        <RailButton onClick={() => setShowGift(true)} label="Gift">
+        <RailButton onClick={() => {
+          if (!user) return navigate({ to: "/welcome" });
+          setShowGift(true);
+        }} label="Gift">
           <Gift className="h-8 w-8 text-gold" />
         </RailButton>
 
@@ -240,13 +251,15 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 
       {/* bottom meta */}
       <div className="absolute inset-x-0 bottom-24 z-10 px-4 pr-20 text-white">
-        <Link
-          to="/u/$username"
-          params={{ username: video.creator?.username ?? "" }}
+        <button
+          onClick={() => {
+            if (!user) return navigate({ to: "/welcome" });
+            navigate({ to: "/u/$username", params: { username: video.creator?.username ?? "" } });
+          }}
           className="font-display text-base font-bold"
         >
           @{video.creator?.username ?? "creator"}
-        </Link>
+        </button>
         {video.caption && <p className="mt-1 line-clamp-2 text-sm">{video.caption}</p>}
         {video.tags?.length > 0 && (
           <p className="mt-1 text-sm font-medium text-gold">
