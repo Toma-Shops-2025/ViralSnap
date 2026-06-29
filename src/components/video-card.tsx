@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Heart, MessageCircle, Gift, Share2, Play, Volume2, VolumeX, ShoppingBag } from "lucide-react";
+import { Heart, MessageCircle, Gift, Share2, Play, Volume2, VolumeX, ShoppingBag, MoreVertical, Flag, Ban } from "lucide-react";
 import Hls from "hls.js";
 import { cn } from "@/lib/utils";
 import { compact } from "@/lib/format";
@@ -8,7 +8,16 @@ import { toggleLike, type FeedVideo } from "@/lib/feed";
 import { useAuth } from "@/hooks/use-auth";
 import { GiftDialog } from "@/components/gift-dialog";
 import { CommentsSheet } from "@/components/comments-sheet";
+import { ReportDialog } from "@/components/report-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { toggleBlock } from "@/lib/safety.functions";
 import { getVideoAssetStatus, getVideoPlaybackUrl, getVideoPosterUrl, isAdaptiveStream } from "@/lib/video";
 
 type Props = {
@@ -29,7 +38,12 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
   const [likeCount, setLikeCount] = useState(video.like_count);
   const [showGift, setShowGift] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportType, setReportType] = useState<"post" | "user">("post");
   const [volume, setVolume] = useState(1);
+  const blockCreator = useServerFn(toggleBlock);
+
+  const isOwner = user?.id === video.creator_id;
   const playbackUrl = useMemo(() => getVideoPlaybackUrl(video), [video]);
   const posterUrl = useMemo(() => getVideoPosterUrl(video), [video]);
   const adaptive = useMemo(() => isAdaptiveStream(video), [video]);
@@ -207,6 +221,60 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 
       {/* right action rail */}
       <div className="absolute bottom-28 right-3 z-20 flex flex-col items-center gap-5 text-white">
+        {!isOwner && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-black/20 backdrop-blur-sm transition-colors hover:bg-black/40"
+                aria-label="More options"
+              >
+                <MoreVertical className="h-6 w-6 text-white/80" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-2xl border-white/10 bg-black/80 backdrop-blur-xl text-white">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!user) return navigate({ to: "/welcome" });
+                  setReportType("post");
+                  setShowReport(true);
+                }}
+                className="flex items-center gap-2 p-3 focus:bg-white/10 focus:text-white cursor-pointer"
+              >
+                <Flag className="h-4 w-4 text-orange-500" />
+                <span>Report post</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!user) return navigate({ to: "/welcome" });
+                  setReportType("user");
+                  setShowReport(true);
+                }}
+                className="flex items-center gap-2 p-3 focus:bg-white/10 focus:text-white cursor-pointer"
+              >
+                <Flag className="h-4 w-4 text-orange-500" />
+                <span>Report creator</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={async () => {
+                  if (!user) return navigate({ to: "/welcome" });
+                  if (window.confirm(`Block @${video.creator?.username}? You won't see their content anymore.`)) {
+                    try {
+                      await blockCreator({ data: { targetUserId: video.creator_id } });
+                      toast.success("Creator blocked");
+                    } catch (e) {
+                      toast.error("Failed to block creator");
+                    }
+                  }
+                }}
+                className="flex items-center gap-2 p-3 focus:bg-rose-500/20 focus:text-rose-500 text-rose-500 cursor-pointer"
+              >
+                <Ban className="h-4 w-4" />
+                <span>Block creator</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <button
           onClick={() => {
             if (!user) return navigate({ to: "/welcome" });
@@ -303,6 +371,13 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
         open={showComments}
         onOpenChange={setShowComments}
         videoId={video.id}
+      />
+
+      <ReportDialog
+        open={showReport}
+        onOpenChange={setShowReport}
+        targetType={reportType === "user" ? "user" : "post"}
+        targetId={reportType === "user" ? video.creator_id : video.id}
       />
     </div>
   );
