@@ -926,6 +926,7 @@ export type Database = {
           mux_asset_status: string | null
           mux_playback_id: string | null
           mux_upload_id: string | null
+          pinned_comment: string | null
           product_clicks: number
           product_cta: string | null
           product_description: string | null
@@ -951,6 +952,7 @@ export type Database = {
           mux_asset_status?: string | null
           mux_playback_id?: string | null
           mux_upload_id?: string | null
+          pinned_comment?: string | null
           product_clicks?: number
           product_cta?: string | null
           product_description?: string | null
@@ -976,6 +978,7 @@ export type Database = {
           mux_asset_status?: string | null
           mux_playback_id?: string | null
           mux_upload_id?: string | null
+          pinned_comment?: string | null
           product_clicks?: number
           product_cta?: string | null
           product_description?: string | null
