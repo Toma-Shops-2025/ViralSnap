@@ -30,7 +30,6 @@ import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AccountDeletionRouteImport } from './routes/account-deletion'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
-import { Route as UProfileRouteImport } from './routes/u.profile'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -142,11 +141,6 @@ const LiveIndexRoute = LiveIndexRouteImport.update({
   path: '/live/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UProfileRoute = UProfileRouteImport.update({
-  id: '/u/profile',
-  path: '/u/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -198,7 +192,6 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/u/profile': typeof UProfileRoute
   '/live/': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -227,7 +220,6 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/u/profile': typeof UProfileRoute
   '/live': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -257,7 +249,6 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
-  '/u/profile': typeof UProfileRoute
   '/live/': typeof LiveIndexRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -288,7 +279,6 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
-    | '/u/profile'
     | '/live/'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -317,7 +307,6 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
-    | '/u/profile'
     | '/live'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -346,7 +335,6 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/live/$streamId'
     | '/u/$username'
-    | '/u/profile'
     | '/live/'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
@@ -376,7 +364,6 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
   UUsernameRoute: typeof UUsernameRoute
-  UProfileRoute: typeof UProfileRoute
   LiveIndexRoute: typeof LiveIndexRoute
   ApiPublicMuxWebhookRoute: typeof ApiPublicMuxWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -532,13 +519,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/u/profile': {
-      id: '/u/profile'
-      path: '/u/profile'
-      fullPath: '/u/profile'
-      preLoaderRoute: typeof UProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -600,7 +580,6 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,
   UUsernameRoute: UUsernameRoute,
-  UProfileRoute: UProfileRoute,
   LiveIndexRoute: LiveIndexRoute,
   ApiPublicMuxWebhookRoute: ApiPublicMuxWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,

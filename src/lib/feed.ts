@@ -61,50 +61,63 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
   }));
 }
 
-export async function fetchFeedPage(page = 0): Promise<FeedPage> {
-  // TikTok-style Endless Feed:
-  // 1. Fetch the total count of published videos.
-  // 2. Calculate an offset that wraps around but adds random jitter so the order
-  //    never feels identical if you scroll long enough.
-  const { count } = await supabase
-    .from("videos")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "published");
+// Full-library shuffle state (per browser session).
+// We shuffle the ENTIRE set of published video IDs once, then page through that
+// shuffled order. This guarantees every video in the library is served before
+// any repeat — not just the most recent batch.
+let feedOrder: string[] = [];
 
-  const total = count ?? 0;
+async function buildFeedOrder(): Promise<string[]> {
+  const ids: string[] = [];
+  const CHUNK = 1000;
+  for (let from = 0; ; from += CHUNK) {
+    const { data, error } = await supabase
+      .from("videos")
+      .select("id")
+      .eq("status", "published")
+      .range(from, from + CHUNK - 1);
+    if (error) throw error;
+    const batch = (data ?? []).map((r) => r.id as string);
+    ids.push(...batch);
+    if (batch.length < CHUNK) break;
+  }
+  return shuffle(ids);
+}
+
+export async function fetchFeedPage(page = 0): Promise<FeedPage> {
+  // Rebuild the shuffled order at the start of every feed session (page 0),
+  // e.g. on first load, tab switch, or refetch. This gives a fresh order each
+  // time while still covering the whole library within a session.
+  if (page === 0 || feedOrder.length === 0) {
+    feedOrder = await buildFeedOrder();
+  }
+
+  const total = feedOrder.length;
   if (total === 0) return { items: [], hasMore: false, page };
 
-  // Generate a predictable but jittered offset.
-  // We use the page number to stay somewhat deterministic for TanStack Query,
-  // but wrap around with a shift based on the total count.
-  const baseOffset = (page * FEED_PAGE_SIZE) % total;
+  // Slice the shuffled order for this page, wrapping around the end so the feed
+  // is endless. Because we wrap over the FULL shuffled list, all videos play in
+  // shuffled order before any repeat.
+  const start = (page * FEED_PAGE_SIZE) % total;
+  const pageIds: string[] = [];
+  for (let i = 0; i < FEED_PAGE_SIZE; i++) {
+    pageIds.push(feedOrder[(start + i) % total]);
+  }
 
   const { data, error } = await supabase
     .from("videos")
     .select("*")
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .range(baseOffset, baseOffset + FEED_PAGE_SIZE - 1);
-
+    .in("id", pageIds);
   if (error) throw error;
 
-  let rows = (data ?? []) as VideoRow[];
+  // Preserve the shuffled order (the `.in()` query returns rows in arbitrary order).
+  const rowMap = new Map((data ?? []).map((v) => [v.id, v as VideoRow]));
+  const rows = pageIds
+    .map((id) => rowMap.get(id))
+    .filter((v): v is VideoRow => Boolean(v));
 
-  // If we hit the end of the list, wrap back to the beginning to keep it "endless"
-  if (rows.length < FEED_PAGE_SIZE && total > rows.length) {
-    const remaining = FEED_PAGE_SIZE - rows.length;
-    const { data: more } = await supabase
-      .from("videos")
-      .select("*")
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .range(0, remaining - 1);
-    rows = [...rows, ...((more ?? []) as VideoRow[])];
-  }
-
-  // Shuffle every batch so it always feels fresh
   return {
-    items: shuffle(await attachCreatorsAndLikes(rows)),
+    items: await attachCreatorsAndLikes(rows),
     hasMore: true,
     page,
   };
