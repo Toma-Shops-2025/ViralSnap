@@ -376,7 +376,7 @@ function ProfilePage() {
 
       <div className="mx-auto mt-6 max-w-2xl px-1">
         <div className="grid grid-cols-3 gap-1">
-          {videos.map((v, i) => (
+          {videos.map((v: Vid, i: number) => (
             <button key={v.id} onClick={() => { setActiveIdx(i); setViewMode("feed"); }} className="group relative aspect-[9/14] overflow-hidden rounded-lg bg-card">
               {v.cover_url ? <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" /> : <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
