@@ -463,3 +463,4 @@ async function captureVideoPoster(
     setTimeout(fail, 8000);
   });
 }
+

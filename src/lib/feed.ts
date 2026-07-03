@@ -63,9 +63,8 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 
 export async function fetchFeedPage(page = 0): Promise<FeedPage> {
   // TikTok-style Endless Feed:
-  // 1. Fetch the total count of published videos.
-  // 2. Calculate an offset that wraps around but adds random jitter so the order
-  //    never feels identical if you scroll long enough.
+  // We fetch a batch and use a random offset to ensure the user sees
+  // different parts of the library every time they open the app.
   const { count } = await supabase
     .from("videos")
     .select("id", { count: "exact", head: true })
@@ -74,35 +73,38 @@ export async function fetchFeedPage(page = 0): Promise<FeedPage> {
   const total = count ?? 0;
   if (total === 0) return { items: [], hasMore: false, page };
 
-  // Generate a predictable but jittered offset.
-  // We use the page number to stay somewhat deterministic for TanStack Query,
-  // but wrap around with a shift based on the total count.
-  const baseOffset = (page * FEED_PAGE_SIZE) % total;
+  // Calculate a random starting point for this "session" if not set
+  if (typeof window !== 'undefined' && !(window as any)._feedOffset) {
+    (window as any)._feedOffset = Math.floor(Math.random() * total);
+  }
+  const sessionOffset = (window as any)._feedOffset || 0;
 
+  // Use the session offset + page number to get a unique slice
+  const start = (page * FEED_PAGE_SIZE + sessionOffset) % total;
+
+  // We fetch a slightly larger batch and shuffle it to prevent "creator clumping"
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .range(baseOffset, baseOffset + FEED_PAGE_SIZE - 1);
+    .range(start, start + FEED_PAGE_SIZE - 1);
 
   if (error) throw error;
 
   let rows = (data ?? []) as VideoRow[];
 
-  // If we hit the end of the list, wrap back to the beginning to keep it "endless"
+  // Wrap around if we hit the end of the table
   if (rows.length < FEED_PAGE_SIZE && total > rows.length) {
     const remaining = FEED_PAGE_SIZE - rows.length;
     const { data: more } = await supabase
       .from("videos")
       .select("*")
       .eq("status", "published")
-      .order("created_at", { ascending: false })
       .range(0, remaining - 1);
     rows = [...rows, ...((more ?? []) as VideoRow[])];
   }
 
-  // Shuffle every batch so it always feels fresh
+  // Shuffle the final items so it never feels like a list
   return {
     items: shuffle(await attachCreatorsAndLikes(rows)),
     hasMore: true,
