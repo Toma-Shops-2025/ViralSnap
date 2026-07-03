@@ -237,7 +237,7 @@ function ProfilePage() {
           <div className="w-9" />
         </header>
         <div ref={feedContainerRef} className="h-full snap-y snap-mandatory overflow-y-scroll no-scrollbar">
-          {videos.map((v, i) => (
+          {videos.map((v: Vid, i: number) => (
             <div key={v.id} className="h-full w-full snap-start relative">
               <VideoCard video={{ ...v, creator: profile, liked: false }} muted={muted} onToggleMute={() => setMuted(!muted)} />
               {isMe && (
