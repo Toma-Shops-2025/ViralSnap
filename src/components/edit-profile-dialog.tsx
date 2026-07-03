@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Loader2, LinkIcon } from "lucide-react";
+import { Camera, Loader2, LinkIcon, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +26,20 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [bio, setBio] = useState(profile?.bio ?? "");
-  const [linkUrl, setLinkUrl] = useState(profile?.link_url ?? "");
+  const [links, setLinks] = useState<string[]>(
+    (profile as any)?.links || (profile?.link_url ? [profile.link_url] : [""])
+  );
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const handleAddLink = () => setLinks([...links, ""]);
+  const handleRemoveLink = (index: number) => setLinks(links.filter((_, i) => i !== index));
+  const handleLinkChange = (index: number, value: string) => {
+    const newLinks = [...links];
+    newLinks[index] = value;
+    setLinks(newLinks);
+  };
 
   const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,27 +76,31 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
       toast.error("Display name can't be empty.");
       return;
     }
-    let link = linkUrl.trim();
-    if (link && !/^https?:\/\//i.test(link)) {
-      link = `https://${link}`;
-    }
-    if (link) {
+
+    const processedLinks = links
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => (/^https?:\/\//i.test(l) ? l : `https://${l}`));
+
+    for (const link of processedLinks) {
       try {
         new URL(link);
       } catch {
-        toast.error("Please enter a valid link.");
+        toast.error(`Invalid link: ${link}`);
         return;
       }
     }
+
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: displayName.trim(),
         bio: bio.trim(),
-        link_url: link || null,
+        link_url: processedLinks[0] || null, // Keep legacy support
+        links: processedLinks, // For the new multi-link feature
         avatar_url: avatarUrl || null,
-      })
+      } as any)
       .eq("id", user.id);
     setSaving(false);
     if (error) {
@@ -100,7 +114,7 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-border bg-card">
+      <DialogContent className="border-border bg-card max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Edit profile</DialogTitle>
           <DialogDescription>Update how you appear across ViralSnap.</DialogDescription>
@@ -136,7 +150,7 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
           />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <Label htmlFor="display_name">Display name</Label>
             <Input
@@ -160,26 +174,50 @@ export function EditProfileDialog({ open, onOpenChange }: Props) {
             />
             <p className="mt-1 text-right text-xs text-muted-foreground">{bio.length}/160</p>
           </div>
-          <div>
-            <Label htmlFor="link_url">Link in bio</Label>
-            <div className="relative mt-1">
-              <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="link_url"
-                value={linkUrl}
-                inputMode="url"
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="yourstore.com"
-                className="rounded-xl bg-secondary/40 pl-9"
-              />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Links in bio</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleAddLink}
+                className="h-7 text-xs font-bold text-primary hover:bg-primary/10"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add Link
+              </Button>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Show a clickable link on your profile.
-            </p>
+
+            {links.map((link, idx) => (
+              <div key={idx} className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={link}
+                    inputMode="url"
+                    onChange={(e) => handleLinkChange(idx, e.target.value)}
+                    placeholder="yourstore.com"
+                    className="rounded-xl bg-secondary/40 pl-9"
+                  />
+                </div>
+                {links.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveLink(idx)}
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-6">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

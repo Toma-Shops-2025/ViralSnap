@@ -328,6 +328,34 @@ function ProfilePage() {
         <h1 className="mt-3 font-display text-xl font-bold">{profile.display_name}</h1>
         <p className="text-sm text-muted-foreground">@{profile.username}</p>
         {profile.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
+
+        <div className="mt-2 flex flex-col gap-1.5">
+          {(profile as any).links && Array.isArray((profile as any).links) ? (
+            (profile as any).links.map((link: string, i: number) => (
+              <a
+                key={i}
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+              >
+                <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{link.replace(/^https?:\/\//, "")}</span>
+              </a>
+            ))
+          ) : profile.link_url ? (
+            <a
+              href={profile.link_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            >
+              <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{profile.link_url.replace(/^https?:\/\//, "")}</span>
+            </a>
+          ) : null}
+        </div>
+
         <div className="mt-4 flex gap-6">
           <Stat label="Followers" value={followers} />
           <Stat label="Following" value={following} />
