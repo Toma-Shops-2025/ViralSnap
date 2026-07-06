@@ -19,18 +19,18 @@ export const Route = createFileRoute("/account-deletion")({
 
 function AccountDeletionPage() {
   return (
-    <LegalLayout title="Delete your ViralSnap account">
+    <LegalLayout title="Delete Your Empire Account">
       <p className="mt-3 text-sm text-foreground/90">
-        You can permanently delete your ViralSnap account and all associated data at any time.
+        You can permanently delete your TomaAI account and all associated data for <strong>ViralSnap</strong> and <strong>Helix Empire</strong> at any time.
       </p>
 
-      <LegalSection title="Delete from inside the app">
+      <LegalSection title="Delete from inside our apps">
         <ol>
-          <li>Open ViralSnap and sign in.</li>
-          <li>Go to <Link to="/settings" className="text-gold">Settings</Link> → scroll to the bottom.</li>
-          <li>Tap <strong>Delete account</strong> and confirm.</li>
+          <li>Open ViralSnap or Helix Empire and sign in.</li>
+          <li>Go to Settings (or Skins in Helix Empire) → scroll to the bottom.</li>
+          <li>Tap <strong>Delete account</strong> (or Sign Out/Request Deletion) and confirm.</li>
         </ol>
-        <p>The deletion is immediate. You&apos;ll be signed out and your data removed.</p>
+        <p>The deletion is immediate. You&apos;ll be signed out and your data removed across the entire network.</p>
       </LegalSection>
 
       <LegalSection title="Delete by email">

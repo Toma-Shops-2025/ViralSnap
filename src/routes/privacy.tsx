@@ -17,11 +17,11 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyPage() {
   return (
-    <LegalLayout title="Privacy Policy" updated="June 8, 2026">
+    <LegalLayout title="Privacy Policy" updated="July 5, 2026">
       <p className="mt-6 text-sm text-foreground/90">
-        ViralSnap (&quot;we&quot;, &quot;us&quot;) explains here what we collect, why, and the choices
-        you have. Questions:{" "}
-        <a href="mailto:support@viralsnap.online" className="text-gold">support@viralsnap.online</a>.
+        TomaAI (&quot;we&quot;, &quot;us&quot;) explains here what we collect, why, and the choices
+        you have for our apps, including <strong>ViralSnap</strong> and <strong>Helix Empire</strong>.
+        Questions: <a href="mailto:support@helixempire.fun" className="text-gold">support@helixempire.fun</a>.
       </p>
 
       <LegalSection title="Information we collect">
