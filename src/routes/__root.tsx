@@ -118,12 +118,11 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <HeadContent />
+        {typeof window !== 'undefined' ? null : <HeadContent />}
       </head>
       <body>
         {children}
-        <Scripts />
+        {typeof window !== 'undefined' ? null : <Scripts />}
       </body>
     </html>
   );
