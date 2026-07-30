@@ -62,9 +62,6 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 }
 
 export async function fetchFeedPage(page = 0): Promise<FeedPage> {
-  // TikTok-style Endless Feed:
-  // We fetch a batch and use a random offset to ensure the user sees
-  // different parts of the library every time they open the app.
   const { count } = await supabase
     .from("videos")
     .select("id", { count: "exact", head: true })
@@ -73,38 +70,20 @@ export async function fetchFeedPage(page = 0): Promise<FeedPage> {
   const total = count ?? 0;
   if (total === 0) return { items: [], hasMore: false, page };
 
-  // Calculate a random starting point for this "session" if not set
-  if (typeof window !== 'undefined' && !(window as any)._feedOffset) {
-    (window as any)._feedOffset = Math.floor(Math.random() * total);
-  }
-  const sessionOffset = (window as any)._feedOffset || 0;
+  // Always use a random offset for every page fetch to maximize variety
+  const randomOffset = total > FEED_PAGE_SIZE ? Math.floor(Math.random() * (total - FEED_PAGE_SIZE)) : 0;
 
-  // Use the session offset + page number to get a unique slice
-  const start = (page * FEED_PAGE_SIZE + sessionOffset) % total;
-
-  // We fetch a slightly larger batch and shuffle it to prevent "creator clumping"
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
-    .range(start, start + FEED_PAGE_SIZE - 1);
+    .range(randomOffset, randomOffset + FEED_PAGE_SIZE - 1);
 
   if (error) throw error;
 
   let rows = (data ?? []) as VideoRow[];
 
-  // Wrap around if we hit the end of the table
-  if (rows.length < FEED_PAGE_SIZE && total > rows.length) {
-    const remaining = FEED_PAGE_SIZE - rows.length;
-    const { data: more } = await supabase
-      .from("videos")
-      .select("*")
-      .eq("status", "published")
-      .range(0, remaining - 1);
-    rows = [...rows, ...((more ?? []) as VideoRow[])];
-  }
-
-  // Shuffle the final items so it never feels like a list
+  // Shuffle the items locally
   return {
     items: shuffle(await attachCreatorsAndLikes(rows)),
     hasMore: true,
