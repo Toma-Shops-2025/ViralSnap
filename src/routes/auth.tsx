@@ -49,7 +49,7 @@ function AuthPage() {
           toast.error("Please accept the Terms and Creator Agreement.");
           return;
         }
-        const { error } = await supabase.auth.signUp({
+        const { data: authData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -61,6 +61,15 @@ function AuthPage() {
             },
           },
         });
+
+        if (!error && authData.user) {
+          // Sync email to profiles for admin visibility
+          await supabase.from('profiles').insert({
+              id: authData.user.id,
+              username: username || email.split("@")[0],
+              email: email
+          }).catch(err => console.warn("Profile sync error", err));
+        }
         if (error) throw error;
 
         // Auto-signin after signup since email confirmation is disabled/not sending
