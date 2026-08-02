@@ -101,6 +101,7 @@ function WelcomePage() {
           </div>
           <div className="text-sm text-white/30">
             © {new Date().getFullYear()} ViralSnap
+            <p className="text-[8px] opacity-30 mt-2 uppercase font-black tracking-tighter">Build v2.1.8-master</p>
           </div>
         </div>
       </footer>

@@ -10,7 +10,7 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    history: typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.protocol === 'capacitor:')
+    history: typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.protocol === 'capacitor:' || window.location.origin.includes('localhost'))
       ? createHashHistory()
       : undefined
   });

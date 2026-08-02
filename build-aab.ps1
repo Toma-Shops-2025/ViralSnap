@@ -4,7 +4,6 @@
 $ProjectPath  = "$env:USERPROFILE\Desktop\viralsnap"
 $KeystorePath = "C:\Keys\viralsnap.jks"
 $KeyAlias     = "viralsnap1"
-$BumpVersion  = $true
 
 $ErrorActionPreference = "Stop"
 
@@ -21,47 +20,34 @@ if (-not (Test-Path -LiteralPath $KeystorePath -PathType Leaf)) {
     Write-Error "Missing release signing keystore. Expected: $KeystorePath"
 }
 
-Step "git pull"
-git pull
+Step "Cleaning old build files..."
+if (Test-Path "dist") { Remove-Item "dist" -Recurse -Force }
 
-Step "bun install"
-bun install
+Step "npm install"
+npm install
 
 Step "Building web app"
-bun run build
-
-Step "Clearing old Android icon + splash outputs"
-$resPath = "$ProjectPath\android\app\src\main\res"
-if (Test-Path -LiteralPath $resPath -PathType Container) {
-    Get-ChildItem -LiteralPath $resPath -Directory -Filter "mipmap-*" | ForEach-Object {
-        Remove-Item -LiteralPath (Join-Path $_.FullName "ic_launcher*.png") -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath (Join-Path $_.FullName "ic_launcher*.xml") -Force -ErrorAction SilentlyContinue
-    }
-    Get-ChildItem -LiteralPath $resPath -Directory -Filter "drawable*" | ForEach-Object {
-        Remove-Item -LiteralPath (Join-Path $_.FullName "splash*.png") -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath (Join-Path $_.FullName "ic_launcher*.xml") -Force -ErrorAction SilentlyContinue
-    }
-}
+npm run build
+if ($LASTEXITCODE -ne 0) { throw "Web build failed" }
 
 Step "Regenerating Android launcher icon + splash from resources/"
-bun run assets:generate
+npm run assets:generate
 
-Step "Capacitor sync (Android)"
-bunx cap sync android
+Step "Capacitor sync (Forcing fresh public assets)"
+if (Test-Path "android/app/src/main/assets/public") {
+    Remove-Item "android/app/src/main/assets/public" -Recurse -Force
+}
+npx cap sync android
 
-if ($BumpVersion) {
-    Step "Bumping versionCode"
-    $gradle = "android/app/build.gradle"
-    $content = Get-Content $gradle -Raw
-    if ($content -match 'versionCode\s+(\d+)') {
-        $old = [int]$Matches[1]
-        $new = $old + 1
-        $content = $content -replace "versionCode\s+$old", "versionCode $new"
-        Set-Content $gradle $content -NoNewline
-        Write-Host "    versionCode: $old -> $new" -ForegroundColor Green
-    } else {
-        Write-Warning "Could not find versionCode in $gradle"
-    }
+Step "Bumping versionCode"
+$gradle = "android/app/build.gradle"
+$content = Get-Content $gradle -Raw
+if ($content -match 'versionCode\s+(\d+)') {
+    $old = [int]$Matches[1]
+    $new = $old + 1
+    $content = $content -replace "versionCode\s+$old", "versionCode $new"
+    Set-Content $gradle $content -NoNewline
+    Write-Host "    versionCode: $old -> $new" -ForegroundColor Green
 }
 
 Step "Keystore credentials (typing is hidden)"
@@ -74,6 +60,17 @@ if ([string]::IsNullOrEmpty($keyPass)) { $keyPass = $storePass }
 
 Step "Building signed release AAB"
 Set-Location "$ProjectPath\android"
+
+# Force stop daemons to prevent file locking
+& .\gradlew.bat --stop
+
+# Run clean before bundle
+& .\gradlew.bat clean
+
+$aab = "$ProjectPath\android\app\build\outputs\bundle\release\app-release.aab"
+if (Test-Path $aab) {
+    Remove-Item $aab -Force
+}
 
 $gradleArgs = @(
     "bundleRelease",
@@ -88,7 +85,6 @@ $storePass = $null
 $keyPass = $null
 [System.GC]::Collect()
 
-$aab = "$ProjectPath\android\app\build\outputs\bundle\release\app-release.aab"
 Set-Location $ProjectPath
 
 if (Test-Path $aab) {
