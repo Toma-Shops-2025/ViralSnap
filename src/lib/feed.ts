@@ -61,7 +61,7 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
   }));
 }
 
-export async function fetchFeedPage(page = 0): Promise<FeedPage> {
+export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const { count } = await supabase
     .from("videos")
     .select("id", { count: "exact", head: true })
@@ -70,23 +70,24 @@ export async function fetchFeedPage(page = 0): Promise<FeedPage> {
   const total = count ?? 0;
   if (total === 0) return { items: [], hasMore: false, page };
 
-  // Always use a random offset for every page fetch to maximize variety
-  const randomOffset = total > FEED_PAGE_SIZE ? Math.floor(Math.random() * (total - FEED_PAGE_SIZE)) : 0;
+  // Calculate a random starting point based on the seed
+  const seedOffset = (seed % Math.max(1, total - FEED_PAGE_SIZE));
+  const effectiveOffset = (seedOffset + (page * FEED_PAGE_SIZE)) % Math.max(1, total);
 
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .eq("status", "published")
-    .range(randomOffset, randomOffset + FEED_PAGE_SIZE - 1);
+    .range(effectiveOffset, effectiveOffset + FEED_PAGE_SIZE - 1);
 
   if (error) throw error;
 
   let rows = (data ?? []) as VideoRow[];
 
-  // Shuffle the items locally
+  // Shuffle the items locally for extra randomness
   return {
     items: shuffle(await attachCreatorsAndLikes(rows)),
-    hasMore: true,
+    hasMore: total > (page + 1) * FEED_PAGE_SIZE,
     page,
   };
 }

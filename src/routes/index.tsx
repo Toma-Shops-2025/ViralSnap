@@ -36,12 +36,15 @@ function FeedPage() {
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
+  // Generate a random seed once per session
+  const [sessionSeed] = useState(() => Math.floor(Math.random() * 1000));
+
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["feed", tab, user?.id],
+      queryKey: ["feed", tab, user?.id, sessionSeed],
       initialPageParam: 0,
       queryFn: ({ pageParam }) =>
-        tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam),
+        tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam, sessionSeed),
       getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     });
 
