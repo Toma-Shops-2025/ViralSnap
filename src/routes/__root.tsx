@@ -3,6 +3,8 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  HeadContent,
+  Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -31,9 +33,11 @@ function RootComponent() {
     <ThemeProvider>
       <AuthProvider>
         <div className="min-h-screen bg-black text-white">
+          <HeadContent />
           <Outlet />
           <Toaster position="top-center" richColors />
           <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter italic">Build v2.2.0-GOLD (FIXED)</p>
+          <Scripts />
         </div>
       </AuthProvider>
     </ThemeProvider>
