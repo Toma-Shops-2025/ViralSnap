@@ -3,6 +3,8 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  HeadContent,
+  Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -13,7 +15,7 @@ import "../styles.css";
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center text-white">
+      <div className="max-w-md text-center text-white font-sans">
         <h1 className="text-7xl font-bold">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
         <div className="mt-6">
@@ -31,9 +33,11 @@ function RootComponent() {
     <ThemeProvider>
       <AuthProvider>
         <div className="min-h-screen bg-black text-white font-sans">
+          <HeadContent />
           <Outlet />
           <Toaster position="top-center" richColors />
           <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter italic">Build v2.2.0-GOLD (FIXED)</p>
+          <Scripts />
         </div>
       </AuthProvider>
     </ThemeProvider>
