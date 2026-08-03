@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -79,34 +79,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#0e121b" },
       { title: "ViralSnap - Go Viral in Seconds" },
       { name: "description", content: "Creator's First Feed is a short-form video platform prioritizing creator monetization and audience ownership." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "ViralSnap - Go Viral in Seconds" },
-      { property: "og:description", content: "Creator's First Feed is a short-form video platform prioritizing creator monetization and audience ownership." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "ViralSnap - Go Viral in Seconds" },
-      { name: "twitter:description", content: "Creator's First Feed is a short-form video platform prioritizing creator monetization and audience ownership." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/0mPRG4BkK7OfId3eMGS2cTecW5i2/social-images/social-1780105599491-Thumbnail2.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/0mPRG4BkK7OfId3eMGS2cTecW5i2/social-images/social-1780105599491-Thumbnail2.webp" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", sizes: "any" },
-      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
-      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
-      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
-  // Removed RootShell to prevent double <html> tags on Capacitor
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
@@ -116,13 +100,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <Outlet />
-          <Toaster position="top-center" richColors />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <html lang="en" className="dark">
+      <head>
+        <HeadContent />
+      </head>
+      <body className="bg-black text-white">
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <AuthProvider>
+              <Outlet />
+              <Toaster position="top-center" richColors />
+              <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter">Build v2.1.8-master</p>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+        <Scripts />
+      </body>
+    </html>
   );
 }
