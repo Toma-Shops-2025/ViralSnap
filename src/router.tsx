@@ -10,9 +10,8 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    history: typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.protocol === 'capacitor:' || window.location.origin.includes('localhost'))
-      ? createHashHistory()
-      : undefined
+    // Ensure we use HashHistory for Capacitor/Android to prevent blank screens
+    history: createHashHistory()
   });
 
   return router;

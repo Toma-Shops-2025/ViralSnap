@@ -3,9 +3,7 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,9 +34,11 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
-          <Toaster position="top-center" richColors />
-          <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter">Build v2.1.8-master</p>
+          <div className="min-h-screen bg-black text-white">
+            <Outlet />
+            <Toaster position="top-center" richColors />
+            <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter">Build v2.2.0-GOLD</p>
+          </div>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
