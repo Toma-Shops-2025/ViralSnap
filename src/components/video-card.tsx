@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
 import { toggleBlock } from "@/lib/safety.functions";
 import { getVideoAssetStatus, getVideoPlaybackUrl, getVideoPosterUrl, isAdaptiveStream } from "@/lib/video";
 
@@ -41,7 +40,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState<"post" | "user">("post");
   const [volume, setVolume] = useState(1);
-  const blockCreator = useServerFn(toggleBlock);
+  const blockCreator = toggleBlock;
 
   const isOwner = user?.id === video.creator_id;
   const playbackUrl = useMemo(() => getVideoPlaybackUrl(video), [video]);
@@ -294,9 +293,7 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
           )}
         </button>
 
-        <RailButton onClick={handleLike} count={likeCount}>
-          <Heart className={cn("h-8 w-8", liked && "fill-primary text-primary")} />
-        </RailButton>
+        <RailButton handleLike={handleLike} count={likeCount} liked={liked} />
 
         <RailButton onClick={() => {
           if (!user) return navigate({ to: "/welcome" });
@@ -386,17 +383,21 @@ export function VideoCard({ video, muted, onToggleMute }: Props) {
 function RailButton({
   children,
   onClick,
+  handleLike,
   count,
   label,
+  liked,
 }: {
-  children: ReactNode;
-  onClick: () => void;
+  children?: ReactNode;
+  onClick?: () => void;
+  handleLike?: () => void;
   count?: number;
   label?: string;
+  liked?: boolean;
 }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-1">
-      {children}
+    <button onClick={onClick || handleLike} className="flex flex-col items-center gap-1">
+      {children || <Heart className={cn("h-8 w-8", liked && "fill-primary text-primary")} />}
       <span className="text-xs font-semibold drop-shadow">
         {count !== undefined ? compact(count) : label}
       </span>

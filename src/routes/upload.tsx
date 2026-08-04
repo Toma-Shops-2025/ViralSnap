@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { Film, Loader2, Sparkles, Upload as UploadIcon, X } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +49,7 @@ function UploadPage() {
   const [productUrl, setProductUrl] = useState("");
   const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
-  const generate = useServerFn(generatePostContent);
+  const generate = generatePostContent;
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/welcome", replace: true });
@@ -463,4 +462,3 @@ async function captureVideoPoster(
     setTimeout(fail, 8000);
   });
 }
-

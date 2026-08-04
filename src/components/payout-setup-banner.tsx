@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Banknote, Loader2, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,8 +18,8 @@ export function PayoutSetupBanner({ returnPath = "/earnings" }: { returnPath?: s
   const [connecting, setConnecting] = useState(false);
   const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
-  const statusFn = useServerFn(getConnectStatus);
-  const onboardFn = useServerFn(createConnectOnboardingLink);
+  const statusFn = getConnectStatus;
+  const onboardFn = createConnectOnboardingLink;
 
   const { data: connect } = useQuery({
     queryKey: ["connect-status", user?.id],

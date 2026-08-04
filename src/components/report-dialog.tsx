@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +44,7 @@ export function ReportDialog({
   const [details, setDetails] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const reportFn = useServerFn(submitReport);
+  const reportFn = submitReport;
 
   const submit = async () => {
     if (!agreed) {

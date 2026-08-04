@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -58,9 +57,9 @@ function EarningsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [onboardUrl, setOnboardUrl] = useState<string | null>(null);
 
-  const statusFn = useServerFn(getConnectStatus);
-  const onboardFn = useServerFn(createConnectOnboardingLink);
-  const payoutFn = useServerFn(requestCreatorPayout);
+  const statusFn = getConnectStatus;
+  const onboardFn = createConnectOnboardingLink;
+  const payoutFn = requestCreatorPayout;
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/welcome", replace: true });
