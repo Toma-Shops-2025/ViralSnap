@@ -1,464 +1,323 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Film, Loader2, Sparkles, Upload as UploadIcon, X } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { BottomNav } from "@/components/bottom-nav";
-import { supabase } from "@/integrations/supabase/client";
-import { generatePostContent } from "@/lib/pro.functions";
-import { getStripeEnvironment } from "@/lib/stripe";
+  ArrowLeft,
+  Upload as UploadIcon,
+  Video,
+  X,
+  Check,
+  Loader2,
+  Hash,
+  Type,
+  Music,
+  MapPin,
+  ChevronRight,
+  Shield,
+  Clock,
+  Layout,
+  Smartphone,
+  CheckCircle2,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProSubscription } from "@/hooks/use-pro";
-import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/upload")({
-  head: () => ({
-    meta: [{ title: "Upload — ViralSnap" }],
-  }),
+  head: () => ({ meta: [{ title: "Upload — ViralSnap" }] }),
   component: UploadPage,
 });
 
 function UploadPage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const { isPro } = useProSubscription();
   const navigate = useNavigate();
-  const { isPro, refetch: refetchPro } = useProSubscription();
-  const { openCheckout, closeCheckout, isOpen, checkoutElement } = useStripeCheckout();
-  const inputRef = useRef<HTMLInputElement>(null);
+
+  const createUploadFn = createMuxDirectUpload;
+  const finalizeFn = finalizeMuxUpload;
+
+  const [step, setTab] = useState<"file" | "details" | "processing">("file");
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
-  const [idea, setIdea] = useState("");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
-  const [titleOptions, setTitleOptions] = useState<string[]>([]);
-  const [hook, setHook] = useState("");
-  const [postingTip, setPostingTip] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [hasProduct, setHasProduct] = useState(false);
-  const [productTitle, setProductTitle] = useState("");
-  const [productUrl, setProductUrl] = useState("");
-  const [productCta, setProductCta] = useState("Shop now");
   const [uploading, setUploading] = useState(false);
-  const generate = generatePostContent;
+  const [progress, setProgress] = useState(0);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
-  useEffect(() => {
-    if (!file) return setPreviewUrl(null);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
 
-  const upgradeToPro = () => {
-    if (!user) return navigate({ to: "/welcome" });
-    openCheckout({
-      plan: "pro",
-      userId: user.id,
-      customerEmail: user.email ?? undefined,
-      returnUrl: `${window.location.origin}/upload?pro=success`,
-    });
-  };
-
-  const handleGenerate = async () => {
-    if (!user) return navigate({ to: "/welcome" });
-    if (!isPro) return upgradeToPro();
-    if (idea.trim().length < 2) {
-      toast.error("Type a short idea first");
+    if (!f.type.startsWith("video/")) {
+      toast.error("Please select a video file");
       return;
     }
-    setGenerating(true);
-    try {
-      const res = await generate({
-        data: { idea: idea.trim(), environment: getStripeEnvironment() },
-      });
-      if ("error" in res) throw new Error(res.error);
-      setTitleOptions(res.titleOptions);
-      setTitle(res.titleOptions[0] ?? "");
-      setCaption(res.caption);
-      if (res.hashtags.length) setTags(res.hashtags.join(" "));
-      setHook(res.hook);
-      setPostingTip(res.postingTip);
-      toast.success("Generated ✨");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Generation failed");
-    } finally {
-      setGenerating(false);
+
+    if (f.size > (isPro ? 500 : 100) * 1024 * 1024) {
+      toast.error(
+        isPro
+          ? "Video too large (max 500MB)"
+          : "Video too large (max 100MB). Upgrade to Pro for more!",
+      );
+      return;
     }
+
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setTab("details");
   };
 
-  const submit = async () => {
-    if (!user || !file) return;
+  const handleUpload = async () => {
+    if (!file || !user) return;
     setUploading(true);
+    setTab("processing");
+
     try {
+      // 1. Get upload URL from Mux (Server Fn)
+      const res = await createUploadFn({ data: {}, context: { supabase, userId: user.id } });
+      if ("error" in res) throw new Error(res.error);
+
+      // 2. Upload file to Mux
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", res.url);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+
+      const uploadPromise = new Promise((resolve, reject) => {
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(null) : reject(new Error("Upload failed")));
+        xhr.onerror = () => reject(new Error("Network error"));
+      });
+
+      xhr.send(file);
+      await uploadPromise;
+
+      // 3. Finalize on our side (Server Fn)
       const tagList = tags
         .split(/[,\s]+/)
-        .map((t) => t.replace(/^#/, "").trim())
-        .filter(Boolean)
-        .slice(0, 8);
+        .map((t) => t.replace(/^#/, "").trim().toLowerCase())
+        .filter(Boolean);
 
-      const finalTitle = (title.trim() || caption.slice(0, 80)).slice(0, 80);
-
-      // 1. Grab a poster frame + duration from the chosen file (best-effort).
-      const meta = await captureVideoPoster(file).catch(() => null);
-
-      // 2. Upload the raw video straight to Cloud Storage — no external host,
-      //    no encoding queue, so it's live the moment the upload finishes.
-      const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const mediaPath = `${user.id}/${crypto.randomUUID()}.${ext || "mp4"}`;
-      const { error: upErr } = await supabase.storage
-        .from("videos")
-        .upload(mediaPath, file, {
-          contentType: file.type || "video/mp4",
-          upsert: false,
-        });
-      if (upErr) throw new Error(upErr.message);
-      const mediaUrl = supabase.storage.from("videos").getPublicUrl(mediaPath).data.publicUrl;
-
-      // 3. Upload the poster to the covers bucket (optional, for a clean first frame).
-      let coverUrl: string | null = null;
-      if (meta?.posterBlob) {
-        const coverPath = `${user.id}/${crypto.randomUUID()}.jpg`;
-        const { error: covErr } = await supabase.storage
-          .from("covers")
-          .upload(coverPath, meta.posterBlob, { contentType: "image/jpeg", upsert: false });
-        if (!covErr) {
-          coverUrl = supabase.storage.from("covers").getPublicUrl(coverPath).data.publicUrl;
-        }
-      }
-
-      // 4. Create the post — published instantly, plays directly from storage.
-      const { error: insErr } = await supabase.from("videos").insert({
-        creator_id: user.id,
-        title: finalTitle,
-        caption,
-        media_url: mediaUrl,
-        cover_url: coverUrl,
-        duration: meta?.duration ?? 0,
-        tags: tagList,
-        status: "published",
-        is_affiliate: hasProduct,
-        product_title: hasProduct ? productTitle || null : null,
-        product_url: hasProduct ? productUrl || null : null,
-        product_cta: hasProduct ? productCta || null : null,
+      await finalizeFn({
+        data: {
+          uploadId: res.id,
+          title: title.trim(),
+          caption: caption.trim(),
+          tags: tagList,
+        },
+        context: { supabase, userId: user.id }
       });
-      if (insErr) throw new Error(insErr.message);
 
-      toast.success("Posted! 🔥 Your video is live.");
-      navigate({ to: "/" });
+      toast.success("Video uploaded! It will appear shortly.");
+      navigate({ to: "/me", replace: true });
     } catch (err) {
+      console.error(err);
       toast.error(err instanceof Error ? err.message : "Upload failed");
-    } finally {
+      setTab("details");
       setUploading(false);
+      setProgress(0);
     }
   };
 
+  if (step === "processing") {
+    return (
+      <div className="flex h-dvh flex-col items-center justify-center p-6 text-center">
+        <div className="relative mb-8 h-32 w-32">
+          <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20" />
+          <div className="absolute inset-4 rounded-full bg-card shadow-inner" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+          <svg className="absolute inset-0 h-full w-full -rotate-90">
+            <circle
+              cx="64"
+              cy="64"
+              r="60"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="8"
+              className="text-primary"
+              strokeDasharray={2 * Math.PI * 60}
+              style={{
+                strokeDashoffset:
+                  2 * Math.PI * 60 * (1 - (progress || 10) / 100),
+                transition: "stroke-dashoffset 0.5s ease",
+              }}
+            />
+          </svg>
+        </div>
+        <h2 className="font-display text-2xl font-bold">Uploading...</h2>
+        <p className="mt-2 text-muted-foreground">
+          {progress < 100
+            ? `Sending your masterpiece to the cloud (${progress}%)`
+            : "Finishing up and generating thumbnails..."}
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-[100dvh] pb-28">
+    <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <Link to="/" className="text-muted-foreground">
-          <X className="h-6 w-6" />
-        </Link>
-        <h1 className="font-display text-lg font-bold">New post</h1>
-        {isPro ? (
-          <span className="rounded-full bg-gradient-fire px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-glow">
-            Pro
-          </span>
-        ) : (
-          <span className="w-6" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => (step === "details" ? setTab("file") : navigate({ to: -1 }))}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-card"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="font-display text-lg font-bold">
+            {step === "file" ? "New Video" : "Details"}
+          </h1>
+        </div>
+        {step === "details" && (
+          <button
+            onClick={handleUpload}
+            disabled={uploading || !title}
+            className="rounded-full bg-primary px-5 py-1.5 text-sm font-bold text-primary-foreground shadow-glow disabled:opacity-50"
+          >
+            Post
+          </button>
         )}
       </header>
 
-      <div className="mx-auto max-w-md space-y-5 px-4 py-5">
-        {!isPro && (
-          <button
-            onClick={upgradeToPro}
-            className="w-full rounded-2xl border border-primary/30 bg-primary/5 p-4 text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 shrink-0 text-primary" />
-              <p className="font-semibold text-primary">
-                Go Pro — supercharge every post
-              </p>
-            </div>
-            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>✨ AI title, caption & hashtag generator</li>
-              <li>🎯 3 title options to pick from, every time</li>
-              <li>🪝 Scroll-stopping hook + best-time-to-post tips</li>
-              <li>🏅 Pro badge on your profile</li>
-              <li>🚀 Priority access to new features</li>
-            </ul>
-            <p className="mt-3 text-sm font-semibold text-primary">
-              Just $4.99/mo — Upgrade →
-            </p>
-          </button>
-        )}
-
-        {!previewUrl ? (
-          <button
-            onClick={() => inputRef.current?.click()}
-            className="flex aspect-[9/12] w-full flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-border bg-card text-muted-foreground"
-          >
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-fire shadow-glow">
-              <Film className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <span className="font-medium text-foreground">Select a video</span>
-            <span className="text-xs">MP4, MOV · up to ~100MB</span>
-          </button>
-        ) : (
-          <div className="relative mx-auto aspect-[9/12] w-full overflow-hidden rounded-3xl bg-black">
-            <video src={previewUrl} className="h-full w-full object-cover" controls />
-            <button
-              onClick={() => setFile(null)}
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
+      <div className="mx-auto max-w-md p-4">
+        {step === "file" ? (
+          <div className="space-y-6">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="group relative flex aspect-[3/4] cursor-pointer flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-border bg-card transition-all hover:border-primary/50 hover:bg-secondary/30"
             >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="video/*"
-          hidden
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="rounded-full bg-primary/10 p-5 group-hover:scale-110 transition-transform">
+                  <UploadIcon className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">Choose a video</p>
+                  <p className="mt-1 text-xs text-muted-foreground px-8">
+                    Vertical videos (9:16) work best. Up to {isPro ? "500MB" : "100MB"}.
+                  </p>
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={onFileChange}
+              />
+            </div>
 
-        {/* AI generator — Pro perk */}
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <Label htmlFor="idea" className="flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-primary" /> Quick idea (optional)
-          </Label>
-          <Input
-            id="idea"
-            value={idea}
-            onChange={(e) => setIdea(e.target.value)}
-            placeholder="e.g. dreamy late-night drive synthwave"
-            className="mt-2 rounded-xl bg-secondary"
-          />
-          <Button
-            onClick={handleGenerate}
-            disabled={generating}
-            variant="outline"
-            className="mt-3 w-full rounded-xl border-primary/40 text-primary hover:bg-primary/10"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Generating…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" /> Generate title, caption & hashtags
-              </>
-            )}
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Type a short idea (or just a title) and let AI write the rest.
-            {!isPro && " Pro only."}
-          </p>
-
-          {titleOptions.length > 1 && (
-            <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Title options — tap to use
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {titleOptions.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setTitle(opt)}
-                    className={
-                      "rounded-full border px-3 py-1.5 text-left text-xs transition-colors " +
-                      (title === opt
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-secondary text-foreground hover:border-primary/40")
-                    }
-                  >
-                    {opt}
-                  </button>
-                ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <Layout className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm font-bold italic">Portrait</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Aspect Ratio 9:16</p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <Smartphone className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm font-bold italic">High Res</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Up to 4K Supported</p>
               </div>
             </div>
-          )}
-
-          {(hook || postingTip) && (
-            <div className="mt-4 space-y-2 rounded-xl bg-secondary/60 p-3">
-              {hook && (
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">🪝 Hook:</span> {hook}
-                </p>
-              )}
-              {postingTip && (
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">🚀 Tip:</span>{" "}
-                  {postingTip}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="caption">Caption</Label>
-          <Textarea
-            id="caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Say something that hooks them in 3 seconds…"
-            className="mt-1 rounded-xl bg-card"
-            rows={3}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="tags">Hashtags</Label>
-          <Input
-            id="tags"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="fyp, viral, howto"
-            className="mt-1 rounded-xl bg-card"
-          />
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Sell a product</p>
-              <p className="text-xs text-muted-foreground">Add a shoppable link in-feed</p>
-            </div>
-            <Switch checked={hasProduct} onCheckedChange={setHasProduct} />
           </div>
-          {hasProduct && (
-            <div className="mt-4 space-y-3">
-              <Input
-                value={productTitle}
-                onChange={(e) => setProductTitle(e.target.value)}
-                placeholder="Product name"
-                className="rounded-xl bg-secondary"
-              />
-              <Input
-                value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
-                placeholder="https://yourstore.com/product"
-                className="rounded-xl bg-secondary"
-              />
-              <Input
-                value={productCta}
-                onChange={(e) => setProductCta(e.target.value)}
-                placeholder="Button text"
-                className="rounded-xl bg-secondary"
-              />
+        ) : (
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="relative aspect-[9/16] w-24 overflow-hidden rounded-xl border border-border bg-black shadow-lg">
+                {preview && (
+                  <video
+                    src={preview}
+                    className="h-full w-full object-cover opacity-60"
+                    muted
+                    playsInline
+                  />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button
+                    onClick={() => setTab("file")}
+                    className="rounded-full bg-black/50 p-1.5 backdrop-blur"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="relative">
+                  <Type className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <input
+                    autoFocus
+                    placeholder="Title your video..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50"
+                  />
+                </div>
+                <textarea
+                  placeholder="Add a description..."
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary/50 resize-none"
+                />
+              </div>
             </div>
-          )}
-        </div>
 
-        <Button
-          onClick={submit}
-          disabled={!file || uploading}
-          className="w-full rounded-full bg-gradient-fire py-6 text-base font-semibold text-primary-foreground shadow-glow hover:opacity-90"
-        >
-          {uploading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" /> Posting…
-            </>
-          ) : (
-            <>
-              <UploadIcon className="h-5 w-5" /> Post video
-            </>
-          )}
-        </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  <Hash className="h-3.5 w-3.5" /> Hashtags
+                </label>
+                <input
+                  placeholder="#dance #funny #tutorial"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary/50"
+                />
+              </div>
+
+              <div className="divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Music className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm">Add Sound</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm">Location</span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
+                <div className="flex items-start gap-3">
+                  <Shield className="mt-0.5 h-4 w-4 text-gold" />
+                  <div>
+                    <p className="text-xs font-bold text-gold uppercase tracking-wider italic">Safety Check</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                      By posting, you agree to our Content Policy. AI safety filters will review your video during processing.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      <Dialog
-        open={isOpen}
-        onOpenChange={(o) => {
-          if (!o) {
-            closeCheckout();
-            refetchPro();
-          }
-        }}
-      >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upgrade to ViralSnap Pro</DialogTitle>
-          </DialogHeader>
-          {checkoutElement}
-        </DialogContent>
-      </Dialog>
-
-      <BottomNav />
     </div>
   );
-}
-
-/**
- * Best-effort: grab the first frame of the chosen video as a JPEG poster and
- * read its duration, entirely client-side. Returns null on any failure so the
- * upload still succeeds without a cover.
- */
-async function captureVideoPoster(
-  file: File,
-): Promise<{ posterBlob: Blob | null; duration: number } | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "metadata";
-    video.src = url;
-
-    const cleanup = () => URL.revokeObjectURL(url);
-    const fail = () => {
-      cleanup();
-      resolve(null);
-    };
-
-    video.onloadedmetadata = () => {
-      const duration = Number.isFinite(video.duration) ? video.duration : 0;
-      // Seek a touch past the very start to avoid a black first frame.
-      const target = Math.min(0.1, duration || 0.1);
-      const finish = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = video.videoWidth || 720;
-          canvas.height = video.videoHeight || 1280;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return resolve({ posterBlob: null, duration });
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(
-            (blob) => {
-              cleanup();
-              resolve({ posterBlob: blob, duration });
-            },
-            "image/jpeg",
-            0.8,
-          );
-        } catch {
-          fail();
-        }
-      };
-      video.onseeked = finish;
-      try {
-        video.currentTime = target;
-      } catch {
-        finish();
-      }
-    };
-    video.onerror = fail;
-    // Safety timeout so a stubborn file never hangs the upload.
-    setTimeout(fail, 8000);
-  });
 }

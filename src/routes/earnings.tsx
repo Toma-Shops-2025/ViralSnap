@@ -38,6 +38,7 @@ import {
 import { PayoutOnboardDialog } from "@/components/payout-onboard-dialog";
 import { toast } from "sonner";
 import { PayoutSetupBanner } from "@/components/payout-setup-banner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/earnings")({
   head: () => ({ meta: [{ title: "Earnings — ViralSnap" }] }),
@@ -75,7 +76,7 @@ function EarningsPage() {
     queryKey: ["connect-status", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const res = await statusFn({ data: { environment: getStripeEnvironment() } });
+      const res = await statusFn({ data: { environment: getStripeEnvironment() }, context: { supabase, userId: user?.id } });
       if ("error" in res) throw new Error(res.error);
       return res;
     },
@@ -94,6 +95,7 @@ function EarningsPage() {
           returnUrl: `${window.location.origin}/earnings`,
           environment: getStripeEnvironment(),
         },
+        context: { supabase, userId: user?.id }
       });
       if ("error" in res) throw new Error(res.error);
       setOnboardUrl(res.url);
@@ -118,6 +120,7 @@ function EarningsPage() {
     try {
       const res = await payoutFn({
         data: { coins, environment: getStripeEnvironment() },
+        context: { supabase, userId: user?.id }
       });
       if ("error" in res) throw new Error(res.error);
       toast.success(`Payout of $${(res.amountCents / 100).toFixed(2)} sent!`);

@@ -1,45 +1,29 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
-  Pencil,
+  User,
+  Shield,
   CreditCard,
-  LogOut,
+  Bell,
   Trash2,
+  ChevronRight,
+  LogOut,
+  Mail,
+  Camera,
   Loader2,
-  Heart,
-  Share2,
-  Sun,
-  Moon,
-  Monitor,
-  Star,
+  Lock,
+  Globe,
+  HelpCircle,
+  Gem,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { BottomNav } from "@/components/bottom-nav";
-import { EditProfileDialog } from "@/components/edit-profile-dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { useTheme, type Theme } from "@/hooks/use-theme";
-import { getStripeEnvironment } from "@/lib/stripe";
-import {
-  createSubscriptionPortalSession,
-} from "@/lib/payments.functions";
-import { deleteAccount } from "@/lib/account.functions";
-import { GooglePlayButton } from "@/components/google-play-button";
-import { PLAY_STORE_URL, RATE_REWARD_COINS } from "@/lib/app-links";
+import { useAuth, signOut } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { deleteAccount } from "@/lib/account.functions";
+import { createSubscriptionPortalSession } from "@/lib/payments.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
+import { useProSubscription } from "@/hooks/use-pro";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — ViralSnap" }] }),
@@ -47,36 +31,13 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { user, profile, loading, signOut, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
+  const { isPro } = useProSubscription();
   const navigate = useNavigate();
-  const [editOpen, setEditOpen] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [rating, setRating] = useState(false);
-
-  const handleRate = async () => {
-    // Open the Play Store listing so the user can leave a review.
-    window.open(PLAY_STORE_URL, "_blank", "noopener,noreferrer");
-    if (!user || profile?.rate_rewarded) return;
-    setRating(true);
-    try {
-      const { data, error } = await supabase.rpc("claim_rate_reward");
-      if (error) throw error;
-      const res = data as { already_claimed: boolean; reward?: number };
-      if (!res.already_claimed) {
-        toast.success(`+${res.reward ?? RATE_REWARD_COINS} ViralCoins! 🎉`, {
-          description: "Thanks for rating ViralSnap.",
-        });
-        await refreshProfile();
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not claim reward");
-    } finally {
-      setRating(false);
-    }
-  };
-
-
+  const [busy, setBusy] = useState(false);
+  const [editName, setEditName] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
 
   const portalFn = createSubscriptionPortalSession;
   const deleteFn = deleteAccount;
@@ -85,371 +46,323 @@ function SettingsPage() {
     if (!loading && !user) navigate({ to: "/welcome", replace: true });
   }, [loading, user, navigate]);
 
-  // Subscriptions this user pays for (supporting creators).
-  const { data: mySubs = [] } = useQuery({
-    queryKey: ["my-subscriptions", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("creator_subscriptions")
-        .select("id, creator_id, status, current_period_end, cancel_at_period_end")
-        .eq("subscriber_id", user!.id)
-        .eq("environment", getStripeEnvironment())
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name);
+      setBio(profile.bio || "");
+    }
+  }, [profile]);
 
-  const hasSub = mySubs.some(
-    (s) => s.status === "active" || s.status === "trialing",
-  );
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/welcome", replace: true });
+    toast.success("Signed out");
+  };
 
-  const handlePortal = async () => {
-    setPortalLoading(true);
+  const handleManageSubscription = async () => {
+    setBusy(true);
     try {
       const res = await portalFn({
         data: {
-          returnUrl: `${window.location.origin}/settings`,
           environment: getStripeEnvironment(),
+          returnUrl: window.location.href,
         },
+        context: { supabase, userId: user?.id }
       });
       if ("error" in res) throw new Error(res.error);
       window.open(res.url, "_blank");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not open billing portal");
+      toast.error(err instanceof Error ? err.message : "Failed to open portal");
     } finally {
-      setPortalLoading(false);
+      setBusy(false);
     }
   };
 
-  const handleDelete = async () => {
-    setDeleting(true);
+  const updateProfile = async () => {
+    setBusy(true);
     try {
-      const res = await deleteFn({ data: undefined });
-      if ("error" in res) throw new Error(res.error);
-      await signOut();
-      toast.success("Your account has been deleted.");
-      navigate({ to: "/" });
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          display_name: displayName.trim(),
+          bio: bio.trim(),
+        })
+        .eq("id", user?.id);
+
+      if (error) throw error;
+      await refreshProfile();
+      setEditName(false);
+      toast.success("Profile updated");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not delete account");
-      setDeleting(false);
+      toast.error("Failed to update profile");
+    } finally {
+      setBusy(false);
     }
   };
+
+  const onAvatar = async (file: File) => {
+    if (!user) return;
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file, {
+      contentType: file.type,
+    });
+    if (error) return toast.error(error.message);
+    const url = supabase.storage.from("avatars").getPublicUrl(path).data
+      .publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("id", user.id);
+
+    if (updateError) return toast.error(updateError.message);
+    await refreshProfile();
+    toast.success("Avatar updated");
+  };
+
+  const handleDeleteAccount = async () => {
+    const ok = window.confirm(
+      "Are you sure? This will permanently delete your account and all data. This cannot be undone.",
+    );
+    if (!ok) return;
+
+    const confirmText = window.prompt("Type 'DELETE' to confirm:");
+    if (confirmText !== "DELETE") return;
+
+    setBusy(true);
+    try {
+      await deleteFn({ data: {}, context: { supabase, userId: user?.id } });
+      await signOut();
+      navigate({ to: "/welcome", replace: true });
+      toast.success("Account deleted");
+    } catch (err) {
+      toast.error("Failed to delete account");
+      setBusy(false);
+    }
+  };
+
+  if (loading || !profile) {
+    return (
+      <div className="grid h-dvh place-items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-[100dvh] pb-28">
+    <div className="min-h-[100dvh] bg-background pb-12">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <Link
-          to={profile ? "/u/$username" : "/"}
-          params={profile ? { username: profile.username } : undefined}
+        <button
+          onClick={() => navigate({ to: "/me" })}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-card"
         >
           <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="font-display text-2xl font-bold">Settings</h1>
+        </button>
+        <h1 className="font-display text-xl font-bold text-foreground">Settings</h1>
       </header>
 
-      <div className="mx-auto max-w-md space-y-6 px-4 py-4">
-        {/* Account */}
+      <div className="mx-auto max-w-md space-y-8 px-4 py-6">
+        {/* profile section */}
         <section>
-          <h2 className="mb-3 font-display text-lg font-bold">Account</h2>
-          <div className="space-y-2">
-            <Row
-              icon={Pencil}
-              label="Edit profile"
-              hint="Name, bio & photo"
-              onClick={() => setEditOpen(true)}
-            />
-            <Row
-              icon={CreditCard}
-              label="Manage subscriptions"
-              hint={hasSub ? "Update or cancel support" : "No active subscriptions"}
-              loading={portalLoading}
-              disabled={!hasSub}
-              onClick={handlePortal}
-            />
-            <Row
-              icon={Share2}
-              label="Share ViralSnap"
-              hint="QR code & invite link"
-              onClick={() => navigate({ to: "/share" })}
-            />
-          </div>
-        </section>
-
-        {/* Supporting */}
-        {mySubs.length > 0 && (
-          <section>
-            <h2 className="mb-3 font-display text-lg font-bold">Creators you support</h2>
-            <div className="space-y-2">
-              {mySubs.map((s) => (
-                <SubRow key={s.id} sub={s} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Appearance */}
-        <section>
-          <h2 className="mb-3 font-display text-lg font-bold">Appearance</h2>
-          <ThemeToggle />
-        </section>
-
-        {/* Get the app */}
-        <section>
-          <h2 className="mb-3 font-display text-lg font-bold">Get the app</h2>
-          <div className="space-y-2">
-            <button
-              onClick={handleRate}
-              disabled={rating}
-              className="flex w-full items-center gap-3 rounded-2xl border border-gold/40 bg-card p-4 text-left transition-colors hover:border-gold/70 disabled:opacity-50"
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 text-gold">
-                {rating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
-              </span>
-              <span className="flex-1">
-                <span className="block text-sm font-semibold">Rate ViralSnap</span>
-                <span className="block text-xs text-muted-foreground">
-                  {profile?.rate_rewarded
-                    ? "Thanks for rating! Reward claimed."
-                    : `Leave a review and earn ${RATE_REWARD_COINS} ViralCoins`}
-                </span>
-              </span>
-              {!profile?.rate_rewarded && (
-                <span className="rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
-                  +{RATE_REWARD_COINS}
-                </span>
-              )}
-            </button>
-            <div className="flex justify-center pt-1">
-              <GooglePlayButton />
-            </div>
-          </div>
-        </section>
-
-
-
-
-
-        {/* Danger zone */}
-        <section>
-          <h2 className="mb-3 font-display text-lg font-bold text-muted-foreground">
-            More
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Account Profile
           </h2>
-          <div className="space-y-2">
-            <Row
-              icon={LogOut}
-              label="Sign out"
-              onClick={async () => {
-                await signOut();
-                toast.success("Signed out");
-                navigate({ to: "/" });
-              }}
-            />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="flex w-full items-center gap-3 rounded-2xl border border-destructive/30 bg-card p-4 text-left transition-colors hover:border-destructive/60">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-sm font-semibold text-destructive">
-                      Delete account
-                    </span>
-                    <span className="block text-xs text-muted-foreground">
-                      Permanently remove your data
-                    </span>
-                  </span>
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="border-border bg-card">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This permanently deletes your profile, videos, and coin balance.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-4">
+              <label className="relative cursor-pointer group">
+                <div className="h-16 w-16 overflow-hidden rounded-full ring-2 ring-primary/20">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center bg-secondary">
+                      <User className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) =>
+                    e.target.files?.[0] && onAvatar(e.target.files[0])
+                  }
+                />
+              </label>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">{profile.display_name}</p>
+                <p className="text-sm text-muted-foreground">@{profile.handle}</p>
+              </div>
+              <button
+                onClick={() => setEditName(true)}
+                className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-80"
+              >
+                Edit
+              </button>
+            </div>
+
+            {editName && (
+              <div className="mt-4 space-y-3 pt-4 border-t border-border">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Display Name</label>
+                  <input
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Bio</label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50 resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy}
+                    onClick={updateProfile}
+                    className="flex-1 rounded-full bg-primary py-2 text-sm font-bold text-primary-foreground"
                   >
-                    {deleting ? "Deleting…" : "Delete forever"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditName(false)}
+                    className="flex-1 rounded-full border border-border py-2 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Legal & support */}
+        {/* subscription */}
         <section>
-          <h2 className="mb-3 font-display text-lg font-bold text-muted-foreground">
-            Legal &amp; support
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Subscription
           </h2>
-          <div className="grid grid-cols-2 gap-2">
-            <LegalLink to="/privacy" label="Privacy Policy" />
-            <LegalLink to="/terms" label="Terms of Service" />
-            <LegalLink to="/guidelines" label="Community Guidelines" />
-            <LegalLink to="/dmca" label="DMCA & Content" />
-            <LegalLink to="/refunds" label="Refund Policy" />
-            <LegalLink to="/account-deletion" label="Delete account" />
-            <LegalLink to="/contact" label="Contact & Support" />
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className={`grid h-10 w-10 place-items-center rounded-xl ${isPro ? 'bg-gold/10' : 'bg-secondary'}`}>
+                  <Gem className={`h-5 w-5 ${isPro ? 'text-gold' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">ViralSnap Pro</p>
+                  <p className="text-xs text-muted-foreground">{isPro ? 'Premium active' : 'Basic Plan'}</p>
+                </div>
+              </div>
+              {isPro ? (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={busy}
+                  className="rounded-full bg-gold/10 px-4 py-1.5 text-xs font-bold text-gold hover:bg-gold/20"
+                >
+                  Manage
+                </button>
+              ) : (
+                <Link
+                  to="/pricing"
+                  className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground"
+                >
+                  Upgrade
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* preferences */}
+        <section>
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Preferences
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+            <SettingRow icon={Mail} label="Email Notifications" active />
+            <SettingRow icon={Bell} label="Push Notifications" active />
+            <SettingRow icon={Lock} label="Privacy & Security" />
+            <SettingRow icon={Globe} label="Language" value="English" />
+          </div>
+        </section>
+
+        {/* support */}
+        <section>
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Support
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+            <Link to="/welcome" className="flex items-center justify-between p-4 transition-colors hover:bg-secondary/20">
+              <div className="flex items-center gap-3">
+                <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm">Help Center</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
+        </section>
+
+        {/* danger zone */}
+        <section className="pt-4">
+          <div className="space-y-3">
+            <button
+              onClick={handleSignOut}
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-foreground transition-colors hover:bg-secondary/20"
+            >
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-semibold">Sign Out</span>
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={busy}
+              className="flex w-full items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <Trash2 className="h-5 w-5" />
+              <span className="text-sm font-semibold">Delete Account</span>
+            </button>
           </div>
         </section>
       </div>
-
-
-      <EditProfileDialog open={editOpen} onOpenChange={setEditOpen} />
-      <BottomNav />
     </div>
   );
 }
 
-type LegalRoute =
-  | "/privacy"
-  | "/terms"
-  | "/guidelines"
-  | "/dmca"
-  | "/refunds"
-  | "/account-deletion"
-  | "/contact";
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const options: { value: Theme; label: string; icon: typeof Sun }[] = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
-  ];
-  return (
-    <div className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2">
-      {options.map(({ value, label, icon: Icon }) => {
-        const active = theme === value;
-        return (
-          <button
-            key={value}
-            onClick={() => setTheme(value)}
-            aria-pressed={active}
-            className={`flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-xs font-semibold transition-colors ${
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <Icon className="h-5 w-5" />
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function LegalLink({ to, label }: { to: LegalRoute; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-xl border border-border bg-card px-3 py-3 text-xs font-medium text-foreground/90 transition-colors hover:border-primary/50"
-    >
-      {label}
-    </Link>
-  );
-}
-
-function Row({
+function SettingRow({
   icon: Icon,
   label,
-  hint,
-  onClick,
-  loading,
-  disabled,
+  value,
+  active
 }: {
-  icon: typeof Pencil;
-  label: string;
-  hint?: string;
-  onClick: () => void;
-  loading?: boolean;
-  disabled?: boolean;
+  icon: any,
+  label: string,
+  value?: string,
+  active?: boolean
 }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 disabled:opacity-50"
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground">
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-      </span>
-      <span className="flex-1">
-        <span className="block text-sm font-semibold">{label}</span>
-        {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
-      </span>
-    </button>
-  );
-}
-
-function SubRow({
-  sub,
-}: {
-  sub: {
-    creator_id: string;
-    status: string;
-    current_period_end: string | null;
-    cancel_at_period_end: boolean;
-  };
-}) {
-  const { data: creator } = useQuery({
-    queryKey: ["creator-mini", sub.creator_id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("username, display_name, avatar_url")
-        .eq("id", sub.creator_id)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const renews = sub.current_period_end
-    ? new Date(sub.current_period_end).toLocaleDateString()
-    : null;
-
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-      {creator?.avatar_url ? (
-        <img src={creator.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-      ) : (
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-fire text-primary-foreground">
-          <Heart className="h-4 w-4" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">
-          {creator?.display_name ?? "Creator"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {sub.status === "canceled"
-            ? "Canceled"
-            : sub.cancel_at_period_end
-              ? `Ends ${renews}`
-              : renews
-                ? `Renews ${renews}`
-                : sub.status}
-        </p>
+    <div className="flex items-center justify-between p-4 transition-colors hover:bg-secondary/20 cursor-pointer">
+      <div className="flex items-center gap-3">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+        <span className="text-sm">{label}</span>
       </div>
-      {creator?.username && (
-        <Link
-          to="/u/$username"
-          params={{ username: creator.username }}
-          className="text-xs font-semibold text-primary"
-        >
-          View
-        </Link>
-      )}
+      <div className="flex items-center gap-2">
+        {value && <span className="text-xs text-muted-foreground">{value}</span>}
+        {active !== undefined && (
+           <div className={`h-5 w-9 rounded-full p-1 transition-colors ${active ? 'bg-primary' : 'bg-muted'}`}>
+             <div className={`h-3 w-3 rounded-full bg-white transition-transform ${active ? 'translate-x-4' : 'translate-x-0'}`} />
+           </div>
+        )}
+        {!active && !value && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      </div>
     </div>
   );
 }

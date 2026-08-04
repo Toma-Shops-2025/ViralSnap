@@ -6,7 +6,7 @@ import {
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Toaster } from "@/components/ui/sonner";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "../styles.css";
 
@@ -27,16 +27,20 @@ function NotFoundComponent() {
 }
 
 function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <div className="min-h-screen bg-black text-white">
-          <Outlet />
-          <Toaster position="top-center" richColors />
-          <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter italic">Build v2.2.0-GOLD (FIXED)</p>
-        </div>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <div className="min-h-screen bg-black text-white">
+            <Outlet />
+            <Toaster position="top-center" richColors />
+            <p className="fixed bottom-2 right-2 text-[8px] opacity-10 uppercase font-black z-[9999] pointer-events-none tracking-tighter italic">Build v2.2.0-GOLD (FINAL-SPA-MODE)</p>
+          </div>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

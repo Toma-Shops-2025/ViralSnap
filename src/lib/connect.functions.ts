@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -14,10 +13,7 @@ type ConnectStatus = {
 };
 
 // Reads the creator's Connect account status and syncs the cached flag.
-export const getConnectStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: { environment: StripeEnv }) => data)
-  .handler(async ({ data, context }): Promise<ConnectStatus | { error: string }> => {
+export const getConnectStatus = async ({ data, context }: { data: { environment: StripeEnv }, context: any }): Promise<ConnectStatus | { error: string }> => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase
       .from("profiles")
@@ -46,15 +42,10 @@ export const getConnectStatus = createServerFn({ method: "POST" })
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
-  });
+  };
 
 // Creates (or reuses) a Connect Express account and returns an onboarding URL.
-export const createConnectOnboardingLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (data: { email?: string; returnUrl: string; environment: StripeEnv }) => data,
-  )
-  .handler(async ({ data, context }): Promise<{ url: string } | { error: string }> => {
+export const createConnectOnboardingLink = async ({ data, context }: { data: { email?: string; returnUrl: string; environment: StripeEnv }, context: any }): Promise<{ url: string } | { error: string }> => {
     const { supabase, userId } = context;
     try {
       const stripe = createStripeClient(data.environment);
@@ -122,22 +113,14 @@ export const createConnectOnboardingLink = createServerFn({ method: "POST" })
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
-  });
+  };
 
 type PayoutResult =
   | { success: true; amountCents: number; balance: number }
   | { error: string };
 
 // Reserves coins, then transfers funds to the creator's connected account.
-export const requestCreatorPayout = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: { coins: number; environment: StripeEnv }) => {
-    if (!Number.isInteger(data.coins) || data.coins < 1000) {
-      throw new Error("Minimum payout is 1,000 coins");
-    }
-    return data;
-  })
-  .handler(async ({ data, context }): Promise<PayoutResult> => {
+export const requestCreatorPayout = async ({ data, context }: { data: { coins: number; environment: StripeEnv }, context: any }): Promise<PayoutResult> => {
     const { supabase, userId } = context;
 
     const { data: profile } = await supabase
@@ -183,4 +166,4 @@ export const requestCreatorPayout = createServerFn({ method: "POST" })
       await supabaseAdmin.rpc("refund_payout", { _request_id: result.request_id });
       return { error: getStripeErrorMessage(error) };
     }
-  });
+  };
