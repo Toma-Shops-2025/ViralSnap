@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { getServerConfig } from "../config.server";
@@ -11,9 +10,9 @@ import { getServerConfig } from "../config.server";
 // them in a .server.ts file. Use this pattern instead of Supabase Edge
 // Functions for server logic.
 
-export const getGreeting = createServerFn({ method: "POST" })
+export const getGreeting = 
   .inputValidator(z.object({ name: z.string().min(1) }))
-  .handler(async ({ data }) => {
+  async function({ data }) {
     const config = getServerConfig();
     return {
       greeting: `Hello, ${data.name}!`,

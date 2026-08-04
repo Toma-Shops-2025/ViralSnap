@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type StripeEnv = "sandbox" | "live";
@@ -20,8 +19,8 @@ const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
  * caption, and hashtag set for a new post. Gated server-side against an active
  * ViralSnap Pro subscription so the feature can't be unlocked from the client.
  */
-export const generatePostContent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+export const generatePostContent = 
+  
   .inputValidator((data: { idea: string; environment: StripeEnv }) => {
     const idea = (data.idea ?? "").trim();
     if (idea.length < 2) throw new Error("Add a short idea first");

@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +17,8 @@ export const REPORT_REASONS = [
 ] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
-export const submitReport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+export const submitReport = 
+  
   .inputValidator((input: {
     targetType: "post" | "comment" | "user";
     targetId: string;
@@ -35,7 +34,7 @@ export const submitReport = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data, context }) => {
+  async function({ data, context }) {
     const { error } = await supabase.from("reports").insert({
       reporter_id: context.userId,
       target_type: data.targetType,
@@ -47,12 +46,12 @@ export const submitReport = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const toggleBlock = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+export const toggleBlock = 
+  
   .inputValidator((input: { targetUserId: string }) =>
     z.object({ targetUserId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
+  async function({ data, context }) {
     if (data.targetUserId === context.userId) throw new Error("You can't block yourself");
     const { userId } = context;
     const { data: existing } = await supabase
