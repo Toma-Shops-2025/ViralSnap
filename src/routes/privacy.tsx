@@ -44,9 +44,8 @@ function PrivacyPage() {
 
       <LegalSection title="Third parties we share data with">
         <ul>
-          <li><b>Supabase</b> — database, authentication, file storage.</li>
+          <li><b>Supabase</b> — database, authentication, and video file storage.</li>
           <li><b>Stripe</b> — payments, subscriptions, tax forms.</li>
-          <li><b>Mux</b> — video hosting, encoding, and streaming.</li>
           <li><b>Google / Lovable AI Gateway</b> — AI generation of content you submit for those features.</li>
           <li><b>Cloudflare / Lovable</b> — hosting and edge delivery.</li>
         </ul>

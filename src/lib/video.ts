@@ -26,11 +26,14 @@ function rewriteLegacyStorageUrl(url: string): string {
 export function getVideoPlaybackUrl(
   video: Pick<VideoRow, "media_url"> & Partial<VideoRow>,
 ): string {
+  const mediaUrl = rewriteLegacyStorageUrl(video.media_url ?? "");
+  if (mediaUrl) return mediaUrl;
+
   const muxPlaybackId = "mux_playback_id" in video ? video.mux_playback_id : null;
   if (muxPlaybackId) {
     return `https://stream.mux.com/${muxPlaybackId}.m3u8`;
   }
-  return rewriteLegacyStorageUrl(video.media_url ?? "");
+  return "";
 }
 
 export function getVideoPosterUrl(video: Partial<VideoRow>) {

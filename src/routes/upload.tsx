@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProSubscription } from "@/hooks/use-pro";
-import { createMuxDirectUpload, finalizeMuxUpload } from "@/lib/mux.functions";
+import { publishVideo } from "@/lib/videos.functions";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -33,9 +33,6 @@ function UploadPage() {
   const { user, profile, loading } = useAuth();
   const { isPro } = useProSubscription();
   const navigate = useNavigate();
-
-  const createUploadFn = createMuxDirectUpload;
-  const finalizeFn = finalizeMuxUpload;
 
   const [step, setTab] = useState<"file" | "details" | "processing">("file");
   const [file, setFile] = useState<File | null>(null);
@@ -75,50 +72,68 @@ function UploadPage() {
     setTab("details");
   };
 
+  const uploadVideoFile = async (videoFile: File): Promise<string> => {
+    const ext = videoFile.name.split(".").pop() ?? "mp4";
+    const path = `${user!.id}/${crypto.randomUUID()}.${ext}`;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error("Not signed in");
+
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!baseUrl || !apiKey) throw new Error("Storage is not configured");
+
+    const url = `${baseUrl}/storage/v1/object/videos/${path}`;
+
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("apikey", apiKey);
+      xhr.setRequestHeader("Content-Type", videoFile.type || "video/mp4");
+      xhr.setRequestHeader("x-upsert", "false");
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setProgress(Math.round((e.loaded / e.total) * 85));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error("Upload failed"));
+      };
+      xhr.onerror = () => reject(new Error("Network error"));
+      xhr.send(videoFile);
+    });
+
+    return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
+  };
+
   const handleUpload = async () => {
     if (!file || !user) return;
     setUploading(true);
     setTab("processing");
+    setProgress(5);
 
     try {
-      // 1. Get upload URL from Mux (Server Fn)
-      const res = await createUploadFn({ data: {}, context: { supabase, userId: user.id } });
-      if ("error" in res) throw new Error(res.error);
+      const mediaUrl = await uploadVideoFile(file);
+      setProgress(90);
 
-      // 2. Upload file to Mux
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", res.url);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-
-      const uploadPromise = new Promise((resolve, reject) => {
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(null) : reject(new Error("Upload failed")));
-        xhr.onerror = () => reject(new Error("Network error"));
-      });
-
-      xhr.send(file);
-      await uploadPromise;
-
-      // 3. Finalize on our side (Server Fn)
       const tagList = tags
         .split(/[,\s]+/)
         .map((t) => t.replace(/^#/, "").trim().toLowerCase())
         .filter(Boolean);
 
-      await finalizeFn({
+      await publishVideo({
         data: {
-          uploadId: res.id,
+          mediaUrl,
           title: title.trim(),
           caption: caption.trim(),
           tags: tagList,
         },
-        context: { supabase, userId: user.id }
       });
 
-      toast.success("Video uploaded! It will appear shortly.");
+      setProgress(100);
+      toast.success("Video uploaded!");
       navigate({ to: "/me", replace: true });
     } catch (err) {
       console.error(err);
@@ -160,7 +175,7 @@ function UploadPage() {
         <p className="mt-2 text-muted-foreground">
           {progress < 100
             ? `Sending your masterpiece to the cloud (${progress}%)`
-            : "Finishing up and generating thumbnails..."}
+            : "Publishing to your feed..."}
         </p>
       </div>
     );

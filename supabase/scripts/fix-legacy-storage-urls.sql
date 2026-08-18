@@ -1,6 +1,13 @@
 -- ViralSnap: fix media URLs after Supabase project migration.
 -- Run in Supabase SQL Editor for project ylfrcrigmazlptxnlzqm
 
+-- Ensure public storage buckets exist
+insert into storage.buckets (id, name, public) values
+  ('avatars', 'avatars', true),
+  ('videos', 'videos', true),
+  ('covers', 'covers', true)
+on conflict (id) do nothing;
+
 update public.videos
 set media_url = replace(
   media_url,
