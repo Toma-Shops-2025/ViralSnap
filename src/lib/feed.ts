@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { isPlayableFeedVideo } from "@/lib/video";
 
 export type VideoRow = Tables<"videos"> & {
   mux_asset_id?: string | null;
@@ -82,7 +83,7 @@ export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
 
   if (error) throw error;
 
-  let rows = (data ?? []) as VideoRow[];
+  let rows = ((data ?? []) as VideoRow[]).filter(isPlayableFeedVideo);
 
   // Shuffle the items locally for extra randomness
   return {
@@ -115,8 +116,9 @@ export async function fetchFollowingFeedPage(page = 0): Promise<FeedPage> {
     .order("created_at", { ascending: false })
     .range(from, to);
   if (error) throw error;
+  const rows = ((data ?? []) as VideoRow[]).filter(isPlayableFeedVideo);
   return {
-    items: shuffle(await attachCreatorsAndLikes((data ?? []) as VideoRow[])),
+    items: shuffle(await attachCreatorsAndLikes(rows)),
     hasMore: (data ?? []).length === FEED_PAGE_SIZE,
     page,
   };

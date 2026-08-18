@@ -51,3 +51,18 @@ export function isAdaptiveStream(video: Partial<VideoRow>) {
   const playback = getVideoPlaybackUrl(video as Pick<VideoRow, "media_url"> & Partial<VideoRow>);
   return playback.endsWith(".m3u8");
 }
+
+const BLOCKED_MEDIA_HOSTS = [
+  "commondatastorage.googleapis.com/gtv-videos-bucket/sample",
+];
+
+/** Feed should skip seed/placeholder rows with no reachable playback source. */
+export function isPlayableFeedVideo(
+  video: Pick<VideoRow, "media_url"> & Partial<VideoRow>,
+): boolean {
+  if (video.mux_playback_id) return true;
+  const url = rewriteLegacyStorageUrl(video.media_url ?? "");
+  if (!url) return false;
+  if (BLOCKED_MEDIA_HOSTS.some((host) => url.includes(host))) return false;
+  return true;
+}

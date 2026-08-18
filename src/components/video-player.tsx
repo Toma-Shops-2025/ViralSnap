@@ -20,37 +20,67 @@ export function VideoPlayer({
 
   useEffect(() => {
     const el = videoRef.current;
-    if (!el || !url) return;
+    if (!el) return;
+
+    if (!url) {
+      el.removeAttribute("src");
+      el.load();
+      return;
+    }
+
+    let hls: Hls | null = null;
+    let cancelled = false;
+
+    const tryPlay = () => {
+      if (cancelled || !isActive) return;
+      el.play().catch((err) => {
+        console.warn("Video play failed:", err);
+      });
+    };
+
+    const pauseAndReset = () => {
+      el.pause();
+      el.currentTime = 0;
+    };
 
     const isHls = url.endsWith(".m3u8");
-    let hls: Hls | null = null;
 
     if (isHls && !el.canPlayType("application/vnd.apple.mpegurl") && Hls.isSupported()) {
       hls = new Hls();
       hls.loadSource(url);
       hls.attachMedia(el);
-    } else {
-      el.src = url;
-      el.load();
-    }
-
-    return () => {
-      hls?.destroy();
-    };
-  }, [url]);
-
-  useEffect(() => {
-    if (!videoRef.current) return;
-
-    if (isActive) {
-      videoRef.current.play().catch((err) => {
-        console.warn("Video play failed:", err);
+      hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) console.warn("HLS fatal error:", data);
       });
     } else {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
+      const onCanPlay = () => tryPlay();
+      el.src = url;
+      el.load();
+      el.addEventListener("canplay", onCanPlay, { once: true });
+
+      return () => {
+        cancelled = true;
+        el.removeEventListener("canplay", onCanPlay);
+        hls?.destroy();
+        pauseAndReset();
+      };
     }
-  }, [isActive]);
+
+    if (!isActive) pauseAndReset();
+
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+      pauseAndReset();
+    };
+  }, [url, isActive]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = isMuted;
+  }, [isMuted]);
 
   return (
     <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">

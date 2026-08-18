@@ -24,3 +24,9 @@ set avatar_url = replace(
   'https://ylfrcrigmazlptxnlzqm.supabase.co'
 )
 where avatar_url like '%gmvpdlefvsafqrblbpfi.supabase.co%';
+
+-- Unpublish broken Google seed/placeholder videos (URLs now return 403)
+update public.videos
+set status = 'removed'
+where status = 'published'
+  and media_url like '%commondatastorage.googleapis.com/gtv-videos-bucket/sample%';
