@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { compact } from "@/lib/format";
+import { getVideoPlaybackUrl, getVideoPosterUrl } from "@/lib/video";
 import { VideoPlayer } from "./video-player";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -115,10 +116,14 @@ export function VideoCard({
     }
   };
 
+  const playbackUrl = getVideoPlaybackUrl(video);
+  const posterUrl = getVideoPosterUrl(video);
+
   return (
-    <div className="relative h-full w-full bg-black">
+    <div className="relative h-[100dvh] w-full shrink-0 snap-start snap-always bg-black">
       <VideoPlayer
-        url={video.media_url}
+        url={playbackUrl}
+        poster={posterUrl}
         isActive={isActive}
         isMuted={isMuted}
         onToggleMute={onToggleMute}

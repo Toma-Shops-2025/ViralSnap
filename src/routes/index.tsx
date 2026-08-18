@@ -49,6 +49,8 @@ function FeedPage() {
     });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const feedRef = useRef<HTMLDivElement>(null);
 
 
   const items = useMemo(() => {
@@ -57,6 +59,26 @@ function FeedPage() {
       page.items.map((video) => ({ video, key: `${video.id}-${pageIndex}` })),
     );
   }, [data]);
+
+  useEffect(() => {
+    const root = feedRef.current;
+    if (!root || items.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            const idx = Number((entry.target as HTMLElement).dataset.idx);
+            if (!Number.isNaN(idx)) setActiveIndex(idx);
+          }
+        });
+      },
+      { root, threshold: [0.6] },
+    );
+
+    root.querySelectorAll<HTMLElement>("[data-feed-item]").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [items.length]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -110,14 +132,16 @@ function FeedPage() {
           <Skeleton className="h-full w-full bg-secondary/40" />
         </div>
       ) : items.length > 0 ? (
-        <div className="h-full snap-y-mandatory overflow-y-scroll no-scrollbar">
-          {items.map(({ video, key }) => (
-            <VideoCard
-              key={key}
-              video={video}
-              muted={muted}
-              onToggleMute={() => setMuted((m) => !m)}
-            />
+        <div ref={feedRef} className="h-full snap-y snap-mandatory overflow-y-scroll no-scrollbar">
+          {items.map(({ video, key }, idx) => (
+            <div key={key} data-feed-item data-idx={idx}>
+              <VideoCard
+                video={video}
+                isActive={idx === activeIndex}
+                isMuted={muted}
+                onToggleMute={() => setMuted((m) => !m)}
+              />
+            </div>
           ))}
           <div ref={sentinelRef} className="h-px w-full" aria-hidden />
           {isFetchingNextPage && <div className="h-20 w-full bg-black" aria-hidden />}

@@ -239,7 +239,12 @@ function ProfilePage() {
         <div ref={feedContainerRef} className="h-full snap-y snap-mandatory overflow-y-scroll no-scrollbar">
           {videos.map((v: Vid, i: number) => (
             <div key={v.id} className="h-full w-full snap-start relative">
-              <VideoCard video={{ ...v, creator: profile, liked: false }} muted={muted} onToggleMute={() => setMuted(!muted)} />
+              <VideoCard
+                video={{ ...v, creator: profile, liked: false }}
+                isActive={i === activeIdx}
+                isMuted={muted}
+                onToggleMute={() => setMuted(!muted)}
+              />
               {isMe && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3">
                   <button onClick={() => {
