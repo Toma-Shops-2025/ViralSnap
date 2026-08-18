@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
 
@@ -22,7 +23,7 @@ function createPublicClient() {
 
 // SSR-friendly public profile fetch so per-user pages (the URLs we hand to
 // Stripe Connect) return crawlable HTML with the creator's name and bio.
-export const getPublicProfile = 
+export const getPublicProfile = createServerFn({ method: "GET" })
   .inputValidator((data: { username: string }) => data)
   .handler(async ({ data }): Promise<PublicProfileData | null> => {
     const supabase = createPublicClient();

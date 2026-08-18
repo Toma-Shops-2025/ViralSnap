@@ -1,3 +1,5 @@
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createDirectUpload, reconcileUpload } from "@/lib/mux.server";
 
@@ -5,8 +7,8 @@ import { createDirectUpload, reconcileUpload } from "@/lib/mux.server";
  * Creates a Mux direct-upload for a video the current user owns and records the
  * upload id on the row. Returns a one-time URL the browser uploads the file to.
  */
-export const createMuxDirectUpload = 
-  
+export const createMuxDirectUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { videoId: string }) => {
     if (!/^[0-9a-fA-F-]{36}$/.test(data.videoId)) throw new Error("Invalid videoId");
     return data;
@@ -57,8 +59,8 @@ export const createMuxDirectUpload =
  * the asset is ready, flips the row to published with its playback id. Returns
  * the resolved status so the client can poll until it's no longer "processing".
  */
-export const finalizeMuxUpload = 
-  
+export const finalizeMuxUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { videoId: string }) => {
     if (!/^[0-9a-fA-F-]{36}$/.test(data.videoId)) throw new Error("Invalid videoId");
     return data;
@@ -108,7 +110,7 @@ export const finalizeMuxUpload =
  * Mux truth. Public + idempotent: it only ever copies state from Mux, so it is
  * safe to call on feed load.
  */
-export const reconcileStuckVideos = .handler(
+export const reconcileStuckVideos = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ published: number }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

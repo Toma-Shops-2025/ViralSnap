@@ -17,7 +17,7 @@ import {
   HelpCircle,
   Gem,
 } from "lucide-react";
-import { useAuth, signOut } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { deleteAccount } from "@/lib/account.functions";
 import { createSubscriptionPortalSession } from "@/lib/payments.functions";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading, refreshProfile, signOut } = useAuth();
   const { isPro } = useProSubscription();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);

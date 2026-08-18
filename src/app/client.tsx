@@ -1,14 +1,10 @@
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { router, queryClient } from '../router'
+import { getRouter } from '../router'
 
 const rootElement = document.getElementById('root')
 if (rootElement) {
+  const router = getRouter()
   const root = createRoot(rootElement)
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  )
+  root.render(<RouterProvider router={router} />)
 }

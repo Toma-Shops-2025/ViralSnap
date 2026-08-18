@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   type StripeEnv,
@@ -48,8 +49,8 @@ async function resolveOrCreateCustomer(
   return created.id;
 }
 
-export const createCoinCheckoutSession = 
-  
+export const createCoinCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (data: {
       priceId: string;
@@ -114,8 +115,8 @@ const SUPPORTER_MONTHLY_COINS = 350;
 const SUPPORTER_PRICE_ID = "creator_supporter_monthly";
 
 // ============ Creator supporter subscription (recurring) ============
-export const createSupporterCheckoutSession = 
-  
+export const createSupporterCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (data: {
       creatorId: string;
@@ -175,8 +176,8 @@ export const createSupporterCheckoutSession =
 // ============ ViralSnap Pro subscription ($4.99/mo) ============
 const PRO_PRICE_ID = "pro_monthly";
 
-export const createProCheckoutSession = 
-  
+export const createProCheckoutSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     (data: { customerEmail?: string; returnUrl: string; environment: StripeEnv }) => data,
   )
@@ -231,8 +232,8 @@ export const createProCheckoutSession =
 type PortalResult = { url: string } | { error: string };
 
 // Opens the Stripe billing portal so a subscriber can manage/cancel.
-export const createSubscriptionPortalSession = 
-  
+export const createSubscriptionPortalSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { returnUrl?: string; environment: StripeEnv }) => data)
   .handler(async ({ data, context }): Promise<PortalResult> => {
     const { supabase, userId } = context;
