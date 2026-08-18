@@ -64,8 +64,13 @@ export function isPlayableFeedVideo(
   video: Pick<VideoRow, "media_url"> & Partial<VideoRow>,
 ): boolean {
   if (video.mux_playback_id) return true;
+
   const url = rewriteLegacyStorageUrl(video.media_url ?? "");
   if (!url) return false;
   if (BLOCKED_MEDIA_HOSTS.some((host) => url.includes(host))) return false;
-  return true;
+
+  // New uploads land in Supabase Storage; skip other dead external URLs.
+  if (url.includes(".supabase.co/storage/v1/object/public/videos/")) return true;
+
+  return false;
 }
