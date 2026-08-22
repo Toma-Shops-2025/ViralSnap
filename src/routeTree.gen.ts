@@ -32,6 +32,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
+import { Route as ApiAdminRestoreMediaRouteImport } from './routes/api/admin/restore-media'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicMuxWebhookRouteImport } from './routes/api/public/mux/webhook'
 
@@ -150,6 +151,11 @@ const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
   path: '/live/$streamId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminRestoreMediaRoute = ApiAdminRestoreMediaRouteImport.update({
+  id: '/api/admin/restore-media',
+  path: '/api/admin/restore-media',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
+  '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live': typeof LiveIndexRoute
+  '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
+  '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -270,6 +279,7 @@ export interface FileRouteTypes {
     | '/live/$streamId'
     | '/u/$username'
     | '/live/'
+    | '/api/admin/restore-media'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/live/$streamId'
     | '/u/$username'
     | '/live'
+    | '/api/admin/restore-media'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   id:
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/live/$streamId'
     | '/u/$username'
     | '/live/'
+    | '/api/admin/restore-media'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -352,6 +364,7 @@ export interface RootRouteChildren {
   LiveStreamIdRoute: typeof LiveStreamIdRoute
   UUsernameRoute: typeof UUsernameRoute
   LiveIndexRoute: typeof LiveIndexRoute
+  ApiAdminRestoreMediaRoute: typeof ApiAdminRestoreMediaRoute
   ApiPublicMuxWebhookRoute: typeof ApiPublicMuxWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -519,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveStreamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/restore-media': {
+      id: '/api/admin/restore-media'
+      path: '/api/admin/restore-media'
+      fullPath: '/api/admin/restore-media'
+      preLoaderRoute: typeof ApiAdminRestoreMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -560,6 +580,7 @@ const rootRouteChildren: RootRouteChildren = {
   LiveStreamIdRoute: LiveStreamIdRoute,
   UUsernameRoute: UUsernameRoute,
   LiveIndexRoute: LiveIndexRoute,
+  ApiAdminRestoreMediaRoute: ApiAdminRestoreMediaRoute,
   ApiPublicMuxWebhookRoute: ApiPublicMuxWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
