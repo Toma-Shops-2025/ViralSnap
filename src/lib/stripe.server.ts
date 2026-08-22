@@ -1,5 +1,3 @@
-// Server-only Stripe utility. Routes all Stripe API calls through the Lovable
-// connector gateway, which attaches the real Stripe secret key.
 import Stripe from 'stripe';
 
 const getEnv = (key: string): string => {
@@ -10,32 +8,22 @@ const getEnv = (key: string): string => {
 
 export type StripeEnv = 'sandbox' | 'live';
 
-const GATEWAY_STRIPE_BASE = 'https://connector-gateway.lovable.dev/stripe';
-
-export function getConnectionApiKey(env: StripeEnv): string {
-  return env === 'sandbox'
-    ? getEnv('STRIPE_SANDBOX_API_KEY')
-    : getEnv('STRIPE_LIVE_API_KEY');
+/** Prefer ViralSnap env names; fall back to AlgoRhythm-style names. */
+export function getStripeSecretKey(env: StripeEnv): string {
+  if (env === 'sandbox') {
+    return process.env.STRIPE_SANDBOX_API_KEY
+      || process.env.STRIPE_SECRET_KEY_TEST
+      || getEnv('STRIPE_SANDBOX_API_KEY');
+  }
+  return process.env.STRIPE_LIVE_API_KEY
+    || process.env.STRIPE_SECRET_KEY_LIVE
+    || getEnv('STRIPE_LIVE_API_KEY');
 }
 
-// Routes api.stripe.com requests through the connector gateway.
 export function createStripeClient(env: StripeEnv): Stripe {
-  const connectionApiKey = getConnectionApiKey(env);
-  const lovableApiKey = getEnv('LOVABLE_API_KEY');
-
-  return new Stripe(connectionApiKey, {
+  return new Stripe(getStripeSecretKey(env), {
     apiVersion: '2026-03-25.dahlia',
-    httpClient: Stripe.createFetchHttpClient(((url: RequestInfo | URL, init?: RequestInit) => {
-      const gatewayUrl = url.toString().replace('https://api.stripe.com', GATEWAY_STRIPE_BASE);
-      return fetch(gatewayUrl, {
-        ...init,
-        headers: {
-          ...Object.fromEntries(new Headers(init?.headers).entries()),
-          'X-Connection-Api-Key': connectionApiKey,
-          'Lovable-API-Key': lovableApiKey,
-        },
-      });
-    }) as typeof fetch),
+    httpClient: Stripe.createFetchHttpClient(),
   });
 }
 
@@ -74,7 +62,6 @@ export function getStripeErrorMessage(error: unknown): string {
   return 'Stripe request failed';
 }
 
-// Verifies Stripe webhook signatures using HMAC-SHA256 (no SDK / gateway needed).
 export async function verifyWebhook(
   req: Request,
   env: StripeEnv,

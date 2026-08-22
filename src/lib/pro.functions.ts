@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { geminiJsonObject } from "@/lib/gemini.server";
 
 type StripeEnv = "sandbox" | "live";
 
@@ -12,8 +13,6 @@ export type GeneratedPost = {
 };
 
 type GenerateResult = GeneratedPost | { error: string };
-
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 /**
  * Pro-only AI helper. Takes a short topic prompt and returns a punchy title,
@@ -28,16 +27,17 @@ export const generatePostContent = createServerFn({ method: "POST" })
     return { idea: idea.slice(0, 400), environment: data.environment };
   })
   .handler(async ({ data, context }): Promise<GenerateResult> => {
-    const { supabase, userId } = context;
+    const { supabase, userId, claims } = context;
+    const claimEmail =
+      typeof claims?.email === "string" ? claims.email.trim().toLowerCase() : "";
+    const emailAdmin = claimEmail === "admin@viralsnap.online";
 
-    // Admins always have full access — bypass the Pro check.
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
 
-    if (!isAdmin) {
-      // Verify active Pro subscription.
+    if (!isAdmin && !emailAdmin) {
       const { data: pro } = await supabase
         .from("pro_subscriptions")
         .select("status, current_period_end")
@@ -61,53 +61,18 @@ export const generatePostContent = createServerFn({ method: "POST" })
       }
     }
 
-
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) return { error: "AI is not configured." };
-
     try {
-      const resp = await fetch(AI_GATEWAY_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a viral short-form video copywriter for a TikTok-style app called ViralSnap. " +
-                "Given a short idea, write content engineered for maximum reach. " +
-                "Respond ONLY as compact JSON with keys: " +
-                "titleOptions (array of exactly 3 distinct scroll-stopping titles, each max 80 chars), " +
-                "caption (1-3 punchy sentences with a hook, may use 1-2 emojis), " +
-                "hashtags (array of 5-8 lowercase hashtags WITHOUT the # symbol, no spaces), " +
-                "hook (one short opening line to say in the first 3 seconds of the video), " +
-                "postingTip (one short, practical tip on when or how to post for max reach). " +
-                "Do not include any text outside the JSON.",
-            },
-            { role: "user", content: data.idea },
-          ],
-          response_format: { type: "json_object" },
-        }),
-      });
-
-      if (resp.status === 429) {
-        return { error: "Rate limit reached. Try again in a moment." };
-      }
-      if (resp.status === 402) {
-        return { error: "AI credits exhausted. Add credits to keep generating." };
-      }
-      if (!resp.ok) {
-        console.error("AI gateway error", resp.status, await resp.text());
-        return { error: "Could not generate suggestions. Try again." };
-      }
-
-      const json = await resp.json();
-      const raw = json?.choices?.[0]?.message?.content ?? "{}";
-      const parsed = JSON.parse(raw) as Partial<GeneratedPost>;
+      const parsed = await geminiJsonObject(
+        "You are a viral short-form video copywriter for a TikTok-style app called ViralSnap. " +
+          "Given a short idea, write content engineered for maximum reach. " +
+          "Respond ONLY as compact JSON with keys: " +
+          "titleOptions (array of exactly 3 distinct scroll-stopping titles, each max 80 chars), " +
+          "caption (1-3 punchy sentences with a hook, may use 1-2 emojis), " +
+          "hashtags (array of 5-8 lowercase hashtags WITHOUT the # symbol, no spaces), " +
+          "hook (one short opening line to say in the first 3 seconds of the video), " +
+          "postingTip (one short, practical tip on when or how to post for max reach).",
+        data.idea,
+      );
 
       const hashtags = Array.isArray(parsed.hashtags)
         ? parsed.hashtags
@@ -132,6 +97,8 @@ export const generatePostContent = createServerFn({ method: "POST" })
       };
     } catch (err) {
       console.error("generatePostContent error:", err);
+      const msg = err instanceof Error ? err.message : "Could not generate suggestions. Try again.";
+      if (msg.includes("GEMINI_API_KEY")) return { error: "AI is not configured." };
       return { error: "Could not generate suggestions. Try again." };
     }
   });

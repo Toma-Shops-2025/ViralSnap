@@ -223,6 +223,15 @@
   .bg-gradient-ember {
     background-image: var(--gradient-ember);
   }
+  .text-gradient-gold {
+    background: linear-gradient(135deg, oklch(0.9 0.12 85), var(--gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-gradient-gold {
+    background: linear-gradient(135deg, oklch(0.9 0.12 85), var(--gold));
+  }
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }

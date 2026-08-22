@@ -36,7 +36,7 @@ function PrivacyPage() {
       <LegalSection title="How we use your data">
         <ul>
           <li>Provide the service: hosting your videos, the feed, comments, likes, follows, gifts, ViralCoins, live streams, and Pro subscriptions.</li>
-          <li>Power AI features (e.g. Google Gemini via Lovable AI Gateway) to generate titles, captions, and hashtags from prompts you submit when you opt in.</li>
+          <li>Power AI features (Google Gemini) to generate titles, captions, and hashtags from prompts you submit when you opt in.</li>
           <li>Prevent abuse, enforce our Terms, and comply with legal obligations.</li>
           <li>Email you about your account or important changes (no marketing email is sent without consent).</li>
         </ul>
@@ -46,15 +46,15 @@ function PrivacyPage() {
         <ul>
           <li><b>Supabase</b> — database, authentication, and video file storage.</li>
           <li><b>Stripe</b> — payments, subscriptions, tax forms.</li>
-          <li><b>Google / Lovable AI Gateway</b> — AI generation of content you submit for those features.</li>
-          <li><b>Cloudflare / Lovable</b> — hosting and edge delivery.</li>
+          <li><b>Google Gemini</b> — AI generation of content you submit for those features.</li>
+          <li><b>Netlify</b> — hosting and edge delivery.</li>
         </ul>
         <p>We do not sell your personal data.</p>
       </LegalSection>
 
       <LegalSection title="AI-generated content">
-        Prompts you submit for AI title, caption, and hashtag generation are sent to our AI provider only to
-        produce those suggestions and are not used by us to train models. You are responsible for the content
+        Prompts you submit for AI title, caption, and hashtag generation are sent to Google Gemini
+        only to produce those suggestions and are not used by us to train models. You are responsible for the content
         you publish.
       </LegalSection>
 

@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
+const ADMIN_EMAILS = new Set(["admin@viralsnap.online"]);
+
 /**
  * Returns whether the current user has the `admin` role. Admins are granted
  * full access to every feature (Pro generators, upload limits, etc.) without
@@ -10,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
  */
 export function useIsAdmin() {
   const { user } = useAuth();
+  const emailAdmin = !!(user?.email && ADMIN_EMAILS.has(user.email.trim().toLowerCase()));
 
   const query = useQuery({
     queryKey: ["is-admin", user?.id],
@@ -25,5 +28,5 @@ export function useIsAdmin() {
     },
   });
 
-  return { isAdmin: !!query.data, isLoading: query.isLoading };
+  return { isAdmin: emailAdmin || !!query.data, isLoading: query.isLoading };
 }

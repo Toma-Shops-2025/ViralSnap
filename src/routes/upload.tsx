@@ -1,49 +1,48 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   ArrowLeft,
-  Upload as UploadIcon,
-  Video,
-  X,
-  Check,
+  Film,
   Loader2,
-  Hash,
-  Type,
-  Music,
-  MapPin,
-  ChevronRight,
-  Shield,
-  Clock,
-  Layout,
-  Smartphone,
-  CheckCircle2,
+  Sparkles,
+  Upload as UploadIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProSubscription } from "@/hooks/use-pro";
 import { publishVideo } from "@/lib/videos.functions";
+import { generatePostContent } from "@/lib/pro.functions";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/upload")({
-  head: () => ({ meta: [{ title: "Upload — ViralSnap" }] }),
+  head: () => ({
+    meta: [
+      { title: "Post — ViralSnap" },
+      { name: "description", content: "Upload a vertical video to the ViralSnap feed." },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: UploadPage,
 });
 
 function UploadPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { isPro } = useProSubscription();
   const navigate = useNavigate();
 
-  const [step, setTab] = useState<"file" | "details" | "processing">("file");
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [idea, setIdea] = useState("");
+  const [genMetaLoading, setGenMetaLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
   const [progress, setProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/welcome", replace: true });
@@ -52,12 +51,10 @@ function UploadPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-
     if (!f.type.startsWith("video/")) {
       toast.error("Please select a video file");
       return;
     }
-
     if (f.size > (isPro ? 500 : 100) * 1024 * 1024) {
       toast.error(
         isPro
@@ -66,10 +63,40 @@ function UploadPage() {
       );
       return;
     }
-
     setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setTab("details");
+  };
+
+  const handleGenerateMeta = async () => {
+    if (!isPro) {
+      toast.error("AI captions are a ViralSnap Pro feature");
+      navigate({ to: "/settings" });
+      return;
+    }
+    const seed = idea.trim() || title.trim() || caption.trim();
+    if (!seed) {
+      toast.error("Type a quick idea or title first");
+      return;
+    }
+    setGenMetaLoading(true);
+    try {
+      const meta = await generatePostContent({
+        data: { idea: seed, environment: getStripeEnvironment() },
+      });
+      if ("error" in meta) {
+        toast.error(meta.error);
+        return;
+      }
+      if (meta.titleOptions?.[0]) setTitle(meta.titleOptions[0]);
+      if (meta.caption) setCaption(meta.caption);
+      if (meta.hashtags?.length) {
+        setTags(meta.hashtags.map((h) => `#${h}`).join(" "));
+      }
+      toast.success("Title, caption & hashtags generated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate");
+    } finally {
+      setGenMetaLoading(false);
+    }
   };
 
   const uploadVideoFile = async (videoFile: File): Promise<string> => {
@@ -108,15 +135,19 @@ function UploadPage() {
     return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
   };
 
-  const handleUpload = async () => {
-    if (!file || !user) return;
-    setUploading(true);
-    setTab("processing");
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file || !user) return toast.error("Pick a video file");
+    if (!title.trim()) return toast.error("Add a title");
+
+    setBusy(true);
+    setBusyLabel("Uploading…");
     setProgress(5);
 
     try {
       const mediaUrl = await uploadVideoFile(file);
       setProgress(90);
+      setBusyLabel("Publishing…");
 
       const tagList = tags
         .split(/[,\s]+/)
@@ -133,206 +164,169 @@ function UploadPage() {
       });
 
       setProgress(100);
-      toast.success("Video uploaded!");
+      toast.success("Posted");
       navigate({ to: "/me", replace: true });
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Upload failed");
-      setTab("details");
-      setUploading(false);
+    } finally {
+      setBusy(false);
+      setBusyLabel("");
       setProgress(0);
     }
   };
 
-  if (step === "processing") {
-    return (
-      <div className="flex h-dvh flex-col items-center justify-center p-6 text-center">
-        <div className="relative mb-8 h-32 w-32">
-          <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20" />
-          <div className="absolute inset-4 rounded-full bg-card shadow-inner" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-          <svg className="absolute inset-0 h-full w-full -rotate-90">
-            <circle
-              cx="64"
-              cy="64"
-              r="60"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="8"
-              className="text-primary"
-              strokeDasharray={2 * Math.PI * 60}
-              style={{
-                strokeDashoffset:
-                  2 * Math.PI * 60 * (1 - (progress || 10) / 100),
-                transition: "stroke-dashoffset 0.5s ease",
-              }}
-            />
-          </svg>
-        </div>
-        <h2 className="font-display text-2xl font-bold">Uploading...</h2>
-        <p className="mt-2 text-muted-foreground">
-          {progress < 100
-            ? `Sending your masterpiece to the cloud (${progress}%)`
-            : "Publishing to your feed..."}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => (step === "details" ? setTab("file") : navigate({ to: -1 }))}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-card"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="font-display text-lg font-bold">
-            {step === "file" ? "New Video" : "Details"}
-          </h1>
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-xl pt-[calc(0.75rem+env(safe-area-inset-top))]">
+        <button
+          type="button"
+          onClick={() => navigate({ to: -1 })}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-card"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div>
+          <h1 className="font-display text-xl tracking-tight text-gradient-gold">New post</h1>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Video. Made to go viral.
+          </p>
         </div>
-        {step === "details" && (
-          <button
-            onClick={handleUpload}
-            disabled={uploading || !title}
-            className="rounded-full bg-primary px-5 py-1.5 text-sm font-bold text-primary-foreground shadow-glow disabled:opacity-50"
-          >
-            Post
-          </button>
-        )}
       </header>
 
-      <div className="mx-auto max-w-md p-4">
-        {step === "file" ? (
-          <div className="space-y-6">
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="group relative flex aspect-[3/4] cursor-pointer flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-border bg-card transition-all hover:border-primary/50 hover:bg-secondary/30"
+      <div className="mx-auto max-w-md px-5 pb-24 pt-6">
+        <form onSubmit={submit} className="space-y-4">
+          {!isPro && (
+            <Link
+              to="/settings"
+              className="block rounded-md border border-gold/40 bg-gradient-to-r from-gold/10 to-transparent p-3 text-xs"
             >
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="rounded-full bg-primary/10 p-5 group-hover:scale-110 transition-transform">
-                  <UploadIcon className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold">Choose a video</p>
-                  <p className="mt-1 text-xs text-muted-foreground px-8">
-                    Vertical videos (9:16) work best. Up to {isPro ? "500MB" : "100MB"}.
-                  </p>
+              <span className="flex items-center gap-2 font-medium text-gold">
+                <Sparkles className="h-3.5 w-3.5" /> Unlock AI features with Pro
+              </span>
+              <span className="mt-1 block text-muted-foreground">
+                AI title, caption &amp; hashtags are Pro perks. Upgrade in Settings →
+              </span>
+            </Link>
+          )}
+
+          <label className="block cursor-pointer rounded-md border border-dashed border-border bg-card/40 p-4 hover:border-gold/40">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-md bg-background text-gold">
+                {file ? <Film className="h-5 w-5" /> : <UploadIcon className="h-5 w-5" />}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm">Media (video)</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {file ? file.name : `Tap to choose a file · up to ${isPro ? "500MB" : "100MB"}`}
                 </div>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={onFileChange}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={onFileChange}
+            />
+          </label>
+
+          {preview && (
+            <div className="overflow-hidden rounded-md border border-gold/20 bg-black">
+              <video
+                src={preview}
+                className="mx-auto max-h-56 w-full object-contain"
+                muted
+                playsInline
+                controls
               />
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <Layout className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm font-bold italic">Portrait</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Aspect Ratio 9:16</p>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <Smartphone className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm font-bold italic">High Res</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Up to 4K Supported</p>
-              </div>
-            </div>
+          <Field label="Title">
+            <input
+              required
+              maxLength={140}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title your video..."
+              className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+            />
+          </Field>
+
+          <div className="space-y-2 rounded-md border border-gold/20 bg-card/30 p-3">
+            <Field label="Quick idea (optional)">
+              <input
+                value={idea}
+                onChange={(e) => setIdea(e.target.value)}
+                maxLength={400}
+                placeholder="e.g. funny cooking fail with grandma"
+                className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+              />
+            </Field>
+            <button
+              type="button"
+              disabled={genMetaLoading}
+              onClick={handleGenerateMeta}
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-gold/40 bg-card/40 px-3 py-2 text-xs uppercase tracking-[0.18em] text-gold hover:bg-card disabled:opacity-50"
+            >
+              {genMetaLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {genMetaLoading ? "Writing…" : "Generate title, caption & hashtags"}
+            </button>
+            <p className="text-[11px] text-muted-foreground">
+              Type a short idea (or just a title) and let AI write the rest.
+            </p>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="relative aspect-[9/16] w-24 overflow-hidden rounded-xl border border-border bg-black shadow-lg">
-                {preview && (
-                  <video
-                    src={preview}
-                    className="h-full w-full object-cover opacity-60"
-                    muted
-                    playsInline
-                  />
-                )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button
-                    onClick={() => setTab("file")}
-                    className="rounded-full bg-black/50 p-1.5 backdrop-blur"
-                  >
-                    <X className="h-4 w-4 text-white" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 space-y-3">
-                <div className="relative">
-                  <Type className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <input
-                    autoFocus
-                    placeholder="Title your video..."
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-3 text-sm font-medium outline-none focus:border-primary/50"
-                  />
-                </div>
-                <textarea
-                  placeholder="Add a description..."
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary/50 resize-none"
-                />
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  <Hash className="h-3.5 w-3.5" /> Hashtags
-                </label>
-                <input
-                  placeholder="#dance #funny #tutorial"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary/50"
-                />
-              </div>
+          <Field label="Caption">
+            <textarea
+              rows={3}
+              maxLength={2000}
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Add a description..."
+              className="w-full resize-none rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+            />
+          </Field>
 
-              <div className="divide-y divide-border rounded-2xl border border-border bg-card overflow-hidden">
-                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Music className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm">Add Sound</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm">Location</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
+          <Field label="Hashtags">
+            <input
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="#dance #funny #tutorial"
+              className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+            />
+          </Field>
 
-              <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4">
-                <div className="flex items-start gap-3">
-                  <Shield className="mt-0.5 h-4 w-4 text-gold" />
-                  <div>
-                    <p className="text-xs font-bold text-gold uppercase tracking-wider italic">Safety Check</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-                      By posting, you agree to our Content Policy. AI safety filters will review your video during processing.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="rounded-md border border-gold/20 bg-gold/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
+            By posting, you agree to our Content Policy. AI safety filters may review your video during processing.
           </div>
-        )}
+
+          <button
+            disabled={busy || !file}
+            type="submit"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground shadow-gold disabled:opacity-50"
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {busy ? (busyLabel || `Uploading… ${progress}%`) : "Publish to the feed"}
+          </button>
+        </form>
       </div>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
