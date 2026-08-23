@@ -14,6 +14,7 @@ import { generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { toastErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
@@ -83,7 +84,7 @@ function UploadPage() {
         data: { idea: seed, environment: getStripeEnvironment() },
       });
       if ("error" in meta) {
-        toast.error(meta.error);
+        toast.error(toastErrorMessage(meta.error, "Could not generate caption"));
         return;
       }
       if (meta.titleOptions?.[0]) setTitle(meta.titleOptions[0]);
@@ -93,7 +94,7 @@ function UploadPage() {
       }
       toast.success("Title, caption & hashtags generated");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not generate");
+      toast.error(toastErrorMessage(e, "Could not generate caption"));
     } finally {
       setGenMetaLoading(false);
     }
