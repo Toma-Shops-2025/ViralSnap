@@ -37,6 +37,25 @@ function FeedPage() {
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
+  const unmuteFeed = () => {
+    setMuted(false);
+    setVolume(1);
+  };
+
+  const toggleMute = () => {
+    if (muted) unmuteFeed();
+    else setMuted(true);
+  };
+
+  const setFeedVolume = (v: number) => {
+    setVolume(v);
+    if (v > 0) {
+      setMuted(false);
+    } else {
+      setMuted(true);
+    }
+  };
+
   // Generate a random seed once per session
   const [sessionSeed] = useState(() => Math.floor(Math.random() * 1000));
 
@@ -113,7 +132,7 @@ function FeedPage() {
           <button
             type="button"
             aria-label={muted ? "Unmute" : "Mute"}
-            onClick={() => setMuted((m) => !m)}
+            onClick={toggleMute}
             className="grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur"
           >
             {muted || volume === 0 ? (
@@ -134,9 +153,7 @@ function FeedPage() {
               value={muted ? 0 : volume}
               onChange={(e) => {
                 const v = Number.parseFloat(e.target.value);
-                setVolume(v);
-                if (v > 0 && muted) setMuted(false);
-                if (v === 0) setMuted(true);
+                setFeedVolume(v);
               }}
               aria-label="Volume"
               className="volume-slider h-20 w-1 cursor-pointer appearance-none rounded-full bg-white/25 [writing-mode:vertical-lr] [direction:rtl]"
@@ -175,7 +192,7 @@ function FeedPage() {
                 isActive={idx === activeIndex}
                 isMuted={muted}
                 volume={volume}
-                onToggleMute={() => setMuted((m) => !m)}
+                onToggleMute={toggleMute}
               />
             </div>
           ))}

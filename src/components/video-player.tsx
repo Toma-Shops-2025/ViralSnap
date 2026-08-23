@@ -35,6 +35,8 @@ export function VideoPlayer({
 
     const tryPlay = () => {
       if (cancelled || !isActive) return;
+      el.muted = isMuted;
+      el.volume = Math.min(1, Math.max(0, volume));
       el.play().catch((err) => {
         console.warn("Video play failed:", err);
       });
@@ -61,6 +63,8 @@ export function VideoPlayer({
       el.load();
       el.addEventListener("canplay", onCanPlay, { once: true });
 
+      if (!isActive) pauseAndReset();
+
       return () => {
         cancelled = true;
         el.removeEventListener("canplay", onCanPlay);
@@ -76,25 +80,33 @@ export function VideoPlayer({
       hls?.destroy();
       pauseAndReset();
     };
-  }, [url, isActive]);
+  }, [url, isActive, isMuted, volume]);
 
+  // Unmute or scroll to new active video — play with sound immediately.
   useEffect(() => {
     const el = videoRef.current;
-    if (!el) return;
+    if (!el || !isActive) return;
     el.muted = isMuted;
     el.volume = Math.min(1, Math.max(0, volume));
-  }, [isMuted, volume]);
+    if (!isMuted) {
+      void el.play().catch(() => {});
+    }
+  }, [isMuted, volume, isActive]);
 
   return (
     <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">
       <video
         ref={videoRef}
         poster={poster ?? undefined}
+        crossOrigin="anonymous"
+        preload="auto"
         loop
         playsInline
         muted={isMuted}
         className="h-full w-full object-cover"
-        onClick={onToggleMute}
+        onClick={() => {
+          if (isMuted) onToggleMute();
+        }}
       />
     </div>
   );
