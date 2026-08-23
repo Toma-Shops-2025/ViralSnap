@@ -98,7 +98,17 @@ export const generatePostContent = createServerFn({ method: "POST" })
     } catch (err) {
       console.error("generatePostContent error:", err);
       const msg = err instanceof Error ? err.message : "Could not generate suggestions. Try again.";
-      if (msg.includes("GEMINI_API_KEY")) return { error: "AI is not configured." };
-      return { error: "Could not generate suggestions. Try again." };
+      if (msg.includes("GEMINI_API_KEY") || msg.toLowerCase().includes("not configured")) {
+        return { error: "AI is not configured. Add GEMINI_API_KEY in Netlify and redeploy." };
+      }
+      if (/api key|permission|401|403/i.test(msg)) {
+        return { error: "Gemini rejected the API key. Check GEMINI_API_KEY in Netlify." };
+      }
+      if (/quota|resource_exhausted|429/i.test(msg)) {
+        return { error: "Gemini free-tier limit hit. Try again later or enable billing in AI Studio." };
+      }
+      // Keep toast readable but useful for debugging
+      const short = msg.length > 160 ? `${msg.slice(0, 160)}…` : msg;
+      return { error: short };
     }
   });
