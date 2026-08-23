@@ -170,7 +170,7 @@ function UploadPage() {
 
       setProgress(100);
       toast.success("Posted");
-      navigate({ to: "/me", replace: true });
+      navigate({ to: "/", replace: true });
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Upload failed");

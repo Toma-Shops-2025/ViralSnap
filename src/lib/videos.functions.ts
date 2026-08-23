@@ -47,20 +47,40 @@ export const publishVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: profile, error: profileErr } = await supabase
+    // Prefer ban columns when present; fall back if migration not applied yet.
+    let profile: {
+      username: string | null;
+      display_name: string | null;
+      is_banned?: boolean | null;
+    } | null = null;
+
+    const withBan = await supabase
       .from("profiles")
       .select("username, display_name, is_banned")
       .eq("id", userId)
       .maybeSingle();
 
-    if (profileErr) throw new Error(profileErr.message);
+    if (withBan.error && /is_banned/i.test(withBan.error.message)) {
+      const fallback = await supabase
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", userId)
+        .maybeSingle();
+      if (fallback.error) throw new Error(fallback.error.message);
+      profile = fallback.data;
+    } else if (withBan.error) {
+      throw new Error(withBan.error.message);
+    } else {
+      profile = withBan.data;
+    }
+
     if (profile?.is_banned) {
       throw new Error("This account is suspended for violating community guidelines.");
     }
 
     assertContentAllowed({
-      username: profile?.username,
-      displayName: profile?.display_name,
+      username: profile?.username ?? undefined,
+      displayName: profile?.display_name ?? undefined,
       title: data.title,
       caption: data.caption,
       tags: data.tags,
