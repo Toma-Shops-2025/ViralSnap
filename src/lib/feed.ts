@@ -39,10 +39,30 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
   const creatorIds = [...new Set(videos.map((v) => v.creator_id))];
   const videoIds = videos.map((v) => v.id);
 
-  const { data: profiles } = await supabase
+  let profiles:
+    | Array<{
+        id: string;
+        username: string;
+        display_name: string;
+        avatar_url: string | null;
+        is_banned?: boolean | null;
+      }>
+    | null = null;
+
+  const withBan = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url, is_banned")
     .in("id", creatorIds);
+
+  if (withBan.error && /is_banned/i.test(withBan.error.message)) {
+    const fallback = await supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url")
+      .in("id", creatorIds);
+    profiles = fallback.data;
+  } else {
+    profiles = withBan.data;
+  }
 
   const profileMap = new Map(
     (profiles ?? []).filter((p) => !p.is_banned).map((p) => [p.id, p]),
