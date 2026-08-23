@@ -102,36 +102,25 @@ function UploadPage() {
   const uploadVideoFile = async (videoFile: File): Promise<string> => {
     const ext = videoFile.name.split(".").pop() ?? "mp4";
     const path = `${user!.id}/${crypto.randomUUID()}.${ext}`;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) throw new Error("Not signed in");
 
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    if (!baseUrl || !apiKey) throw new Error("Storage is not configured");
-
-    const url = `${baseUrl}/storage/v1/object/videos/${path}`;
-
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", url);
-      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      xhr.setRequestHeader("apikey", apiKey);
-      xhr.setRequestHeader("Content-Type", videoFile.type || "video/mp4");
-      xhr.setRequestHeader("x-upsert", "false");
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 85));
-        }
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error("Upload failed"));
-      };
-      xhr.onerror = () => reject(new Error("Network error"));
-      xhr.send(videoFile);
+    // Prefer the authenticated Supabase client (same keys as login) instead of a
+    // separate XHR apikey header that can drift from Netlify VITE_ vars.
+    const { error } = await supabase.storage.from("videos").upload(path, videoFile, {
+      contentType: videoFile.type || "video/mp4",
+      upsert: false,
     });
 
+    if (error) {
+      const msg = error.message || "Upload failed";
+      if (/invalid api key/i.test(msg)) {
+        throw new Error(
+          "Supabase storage rejected the API key. Check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Netlify match your Supabase project anon key, then redeploy.",
+        );
+      }
+      throw new Error(msg);
+    }
+
+    setProgress(85);
     return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
   };
 

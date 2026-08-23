@@ -2,10 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const STORAGE_BASE = `${process.env.SUPABASE_URL ?? ""}/storage/v1/object/public/`;
-const isVideosBucketUrl = (u: string) =>
-  STORAGE_BASE !== "/storage/v1/object/public/" &&
-  u.startsWith(`${STORAGE_BASE}videos/`);
+const STORAGE_BASE = `${(process.env.SUPABASE_URL ?? "").replace(/\/$/, "")}/storage/v1/object/public/`;
+const isVideosBucketUrl = (u: string) => {
+  try {
+    const path = new URL(u).pathname;
+    return path.includes("/storage/v1/object/public/videos/");
+  } catch {
+    return false;
+  }
+};
 
 export const publishVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,12 +30,13 @@ export const publishVideo = createServerFn({ method: "POST" })
         coverUrl: z
           .string()
           .url()
-          .refine(
-            (u) =>
-              STORAGE_BASE !== "/storage/v1/object/public/" &&
-              u.startsWith(`${STORAGE_BASE}covers/`),
-            "coverUrl must point to the covers bucket",
-          )
+          .refine((u) => {
+            try {
+              return new URL(u).pathname.includes("/storage/v1/object/public/covers/");
+            } catch {
+              return false;
+            }
+          }, "coverUrl must point to the covers bucket")
           .nullish(),
         title: z.string().min(1).max(140),
         caption: z.string().max(2000).optional(),
@@ -55,6 +61,14 @@ export const publishVideo = createServerFn({ method: "POST" })
       .select("id")
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      const msg = error.message || "Could not publish video";
+      if (/invalid api key/i.test(msg)) {
+        throw new Error(
+          "Supabase rejected the server API key. In Netlify, set SUPABASE_PUBLISHABLE_KEY to the same anon key as VITE_SUPABASE_PUBLISHABLE_KEY, then redeploy.",
+        );
+      }
+      throw new Error(msg);
+    }
     return { videoId: video.id };
   });
