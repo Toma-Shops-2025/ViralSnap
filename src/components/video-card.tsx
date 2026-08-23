@@ -196,6 +196,82 @@ export function VideoCard({
           <span className="text-xs font-bold text-white drop-shadow-md">Gift</span>
         </button>
 
+        {/* Always visible — was hidden on your own posts / clipped under Share */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="More options"
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors">
+                <MoreVertical className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xs font-bold text-white drop-shadow-md">More</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            side="left"
+            className="z-[80] min-w-[11rem]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {video.creator_id === user?.id ? (
+              <DropdownMenuItem disabled>This is your video</DropdownMenuItem>
+            ) : (
+              <>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    if (!user) {
+                      navigate({ to: "/welcome" });
+                      return;
+                    }
+                    setReportOpen(true);
+                  }}
+                >
+                  Report video
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    if (!user) {
+                      navigate({ to: "/welcome" });
+                      return;
+                    }
+                    const creatorId = video.creator_id || video.creator?.id;
+                    if (!creatorId) return;
+                    navigate({
+                      to: "/report/user/$userId",
+                      params: { userId: creatorId },
+                      search: { username: video.creator?.username },
+                    });
+                  }}
+                >
+                  Report creator
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-rose-400 focus:text-rose-400"
+                  onSelect={() => {
+                    if (!user) {
+                      navigate({ to: "/welcome" });
+                      return;
+                    }
+                    const creatorId = video.creator_id || video.creator?.id;
+                    if (!creatorId) return;
+                    navigate({
+                      to: "/block/$userId",
+                      params: { userId: creatorId },
+                      search: { username: video.creator?.username },
+                    });
+                  }}
+                >
+                  Block creator
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <button
           onClick={handleShare}
           className="flex flex-col items-center gap-1"
@@ -205,73 +281,6 @@ export function VideoCard({
           </div>
           <span className="text-xs font-bold text-white drop-shadow-md">Share</span>
         </button>
-
-        {video.creator_id !== user?.id && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label="More options"
-                onClick={(e) => e.stopPropagation()}
-                className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors"
-              >
-                <MoreVertical className="h-6 w-6 text-white" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              side="left"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (!user) {
-                    navigate({ to: "/welcome" });
-                    return;
-                  }
-                  setReportOpen(true);
-                }}
-              >
-                Report video
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (!user) {
-                    navigate({ to: "/welcome" });
-                    return;
-                  }
-                  const creatorId = video.creator_id || video.creator?.id;
-                  if (!creatorId) return;
-                  navigate({
-                    to: "/report/user/$userId",
-                    params: { userId: creatorId },
-                    search: { username: video.creator?.username },
-                  });
-                }}
-              >
-                Report creator
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-rose-400 focus:text-rose-400"
-                onSelect={() => {
-                  if (!user) {
-                    navigate({ to: "/welcome" });
-                    return;
-                  }
-                  const creatorId = video.creator_id || video.creator?.id;
-                  if (!creatorId) return;
-                  navigate({
-                    to: "/block/$userId",
-                    params: { userId: creatorId },
-                    search: { username: video.creator?.username },
-                  });
-                }}
-              >
-                Block creator
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       {/* product tag */}

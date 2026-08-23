@@ -93,6 +93,23 @@ export function VideoPlayer({
     }
   }, [isMuted, volume, isActive]);
 
+  // Stop audio when user leaves the tab / minimizes the window.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onVisibility = () => {
+      if (document.hidden) {
+        el.pause();
+      } else if (isActive) {
+        el.muted = isMuted;
+        el.volume = Math.min(1, Math.max(0, volume));
+        void el.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [isActive, isMuted, volume]);
+
   return (
     <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">
       <video
