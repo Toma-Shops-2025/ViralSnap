@@ -59,18 +59,19 @@ const BLOCKED_MEDIA_HOSTS = [
   "commondatastorage.googleapis.com/gtv-videos-bucket/sample",
 ];
 
+function isCurrentSupabaseVideoUrl(url: string): boolean {
+  return url.includes(".supabase.co/storage/v1/object/public/videos/");
+}
+
 /** Feed should skip seed/placeholder rows with no reachable playback source. */
 export function isPlayableFeedVideo(
   video: Pick<VideoRow, "media_url"> & Partial<VideoRow>,
 ): boolean {
-  if (video.mux_playback_id) return true;
-
   const url = rewriteLegacyStorageUrl(video.media_url ?? "");
   if (!url) return false;
   if (BLOCKED_MEDIA_HOSTS.some((host) => url.includes(host))) return false;
 
-  // New uploads land in Supabase Storage; skip other dead external URLs.
-  if (url.includes(".supabase.co/storage/v1/object/public/videos/")) return true;
-
-  return false;
+  // New uploads land in Supabase Storage as direct MP4. Legacy Mux HLS rows
+  // often stall on pause with the current player and are excluded from feed.
+  return isCurrentSupabaseVideoUrl(url);
 }

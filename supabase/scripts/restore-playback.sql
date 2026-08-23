@@ -44,12 +44,15 @@ update public.profiles
 set avatar_url = replace(avatar_url, 'https://gmvpdlefvsafqrblbpfi.supabase.co', 'https://ylfrcrigmazlptxnlzqm.supabase.co')
 where avatar_url like '%gmvpdlefvsafqrblbpfi.supabase.co%';
 
--- 4) Hide broken feed rows (files were never migrated to this project).
--- Keeps ~10 legacy Mux HLS videos that still stream publicly.
+-- 4) Hide legacy/broken feed rows (Mux HLS + dead URLs).
+-- Keeps only current Supabase Storage MP4 uploads in the feed.
 update public.videos
 set status = 'removed'
 where status = 'published'
-  and mux_playback_id is null;
+  and (
+    coalesce(media_url, '') = ''
+    or media_url not like '%.supabase.co/storage/v1/object/public/videos/%'
+  );
 
 -- 5) Summary
 select status, count(*) as n from public.videos group by status order by n desc;

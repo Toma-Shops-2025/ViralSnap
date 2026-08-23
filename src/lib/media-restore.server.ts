@@ -24,13 +24,33 @@ export async function restoreViralSnapPlayback() {
     .select("id", { count: "exact", head: true })
     .eq("status", "published");
 
-  const { error: hideErr } = await supabaseAdmin
+  const { data: publishedRows, error: listErr } = await supabaseAdmin
     .from("videos")
-    .update({ status: "removed" })
-    .eq("status", "published")
-    .is("mux_playback_id", null);
+    .select("id, media_url, mux_playback_id")
+    .eq("status", "published");
 
-  if (hideErr) throw new Error(hideErr.message);
+  if (listErr) throw new Error(listErr.message);
+
+  const legacyIds = (publishedRows ?? [])
+    .filter((row) => {
+      const url = row.media_url ?? "";
+      const onCurrentStorage = url.includes(
+        ".supabase.co/storage/v1/object/public/videos/",
+      );
+      return !onCurrentStorage;
+    })
+    .map((row) => row.id);
+
+  let unpublishedLegacy = 0;
+  if (legacyIds.length > 0) {
+    const { error: hideErr } = await supabaseAdmin
+      .from("videos")
+      .update({ status: "removed" })
+      .in("id", legacyIds);
+
+    if (hideErr) throw new Error(hideErr.message);
+    unpublishedLegacy = legacyIds.length;
+  }
 
   const { count: publishedAfter } = await supabaseAdmin
     .from("videos")
@@ -41,7 +61,8 @@ export async function restoreViralSnapPlayback() {
     buckets: { created, existing },
     publishedBefore: publishedBefore ?? 0,
     publishedAfter: publishedAfter ?? 0,
+    unpublishedLegacy,
     note:
-      "Storage policies still require restore-playback.sql if uploads fail. Re-upload videos to repopulate the feed.",
+      "Unpublished legacy Mux/dead-URL rows. Feed now only shows Supabase Storage MP4 uploads.",
   };
 }
