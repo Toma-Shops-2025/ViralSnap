@@ -19,10 +19,15 @@ export function VideoPlayer({
   onToggleMute,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
+  // Attach / swap media source — never tied to mute/volume.
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
+
+    hlsRef.current?.destroy();
+    hlsRef.current = null;
 
     if (!url) {
       el.removeAttribute("src");
@@ -30,59 +35,48 @@ export function VideoPlayer({
       return;
     }
 
-    let hls: Hls | null = null;
-    let cancelled = false;
-
-    const tryPlay = () => {
-      if (cancelled || !isActive) return;
-      el.muted = isMuted;
-      el.volume = Math.min(1, Math.max(0, volume));
-      el.play().catch((err) => {
-        console.warn("Video play failed:", err);
-      });
-    };
-
-    const pauseAndReset = () => {
-      el.pause();
-      el.currentTime = 0;
-    };
-
     const isHls = url.endsWith(".m3u8");
 
     if (isHls && !el.canPlayType("application/vnd.apple.mpegurl") && Hls.isSupported()) {
-      hls = new Hls();
+      const hls = new Hls();
+      hlsRef.current = hls;
       hls.loadSource(url);
       hls.attachMedia(el);
-      hls.on(Hls.Events.MANIFEST_PARSED, tryPlay);
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) console.warn("HLS fatal error:", data);
       });
     } else {
-      const onCanPlay = () => tryPlay();
       el.src = url;
       el.load();
-      el.addEventListener("canplay", onCanPlay, { once: true });
-
-      if (!isActive) pauseAndReset();
-
-      return () => {
-        cancelled = true;
-        el.removeEventListener("canplay", onCanPlay);
-        hls?.destroy();
-        pauseAndReset();
-      };
     }
 
-    if (!isActive) pauseAndReset();
-
     return () => {
-      cancelled = true;
-      hls?.destroy();
-      pauseAndReset();
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
     };
-  }, [url, isActive, isMuted, volume]);
+  }, [url]);
 
-  // Unmute or scroll to new active video — play with sound immediately.
+  // Active scroll card — start from beginning when this video becomes active.
+  // Mute/volume must NOT be in this dependency list (TikTok-style).
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+
+    if (isActive) {
+      el.currentTime = 0;
+      el.muted = isMuted;
+      el.volume = Math.min(1, Math.max(0, volume));
+      void el.play().catch((err) => {
+        console.warn("Video play failed:", err);
+      });
+    } else {
+      el.pause();
+      el.currentTime = 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit mute/volume
+  }, [isActive, url]);
+
+  // Unmute / volume — keep playback position (same as AlgoRhythm).
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !isActive) return;
