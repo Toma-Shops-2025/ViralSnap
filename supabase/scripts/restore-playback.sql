@@ -8,6 +8,9 @@ insert into storage.buckets (id, name, public) values
   ('covers', 'covers', true)
 on conflict (id) do nothing;
 
+-- Long-form uploads (default bucket cap is 50MB)
+update storage.buckets set file_size_limit = 524288000 where id = 'videos';
+
 -- 2) Storage policies (idempotent)
 drop policy if exists "Public read media" on storage.objects;
 create policy "Public read media" on storage.objects
