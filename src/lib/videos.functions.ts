@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertContentAllowed } from "@/lib/content-policy";
 
 const isVideosBucketUrl = (u: string) => {
   try {
@@ -45,6 +46,25 @@ export const publishVideo = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("username, display_name, is_banned")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profileErr) throw new Error(profileErr.message);
+    if (profile?.is_banned) {
+      throw new Error("This account is suspended for violating community guidelines.");
+    }
+
+    assertContentAllowed({
+      username: profile?.username,
+      displayName: profile?.display_name,
+      title: data.title,
+      caption: data.caption,
+      tags: data.tags,
+    });
 
     const { data: video, error } = await supabase
       .from("videos")

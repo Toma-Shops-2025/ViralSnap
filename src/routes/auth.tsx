@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
+import { assertContentAllowed } from "@/lib/content-policy";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -47,6 +48,13 @@ function AuthPage() {
         }
         if (!terms) {
           toast.error("Please accept the Terms and Creator Agreement.");
+          return;
+        }
+        const chosenUsername = (username || email.split("@")[0]).trim();
+        try {
+          assertContentAllowed({ username: chosenUsername, displayName: chosenUsername });
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Username not allowed");
           return;
         }
         const { data: authData, error } = await supabase.auth.signUp({

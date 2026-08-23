@@ -15,6 +15,7 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toastErrorMessage } from "@/lib/utils";
+import { assertContentAllowed } from "@/lib/content-policy";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
@@ -118,6 +119,11 @@ function UploadPage() {
           "Supabase storage rejected the API key. Check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Netlify match your Supabase project anon key, then redeploy.",
         );
       }
+      if (/maximum allowed size|exceeded/i.test(msg)) {
+        throw new Error(
+          "Upload exceeds storage size limit. In Supabase SQL Editor, run supabase/migrations/20260823120000_storage_videos_size_limit.sql, then try again.",
+        );
+      }
       throw new Error(msg);
     }
 
@@ -135,6 +141,15 @@ function UploadPage() {
     setProgress(5);
 
     try {
+      assertContentAllowed({
+        title: title.trim(),
+        caption: caption.trim(),
+        tags: tags
+          .split(/[,\s]+/)
+          .map((t) => t.replace(/^#/, "").trim().toLowerCase())
+          .filter(Boolean),
+      });
+
       const mediaUrl = await uploadVideoFile(file);
       setProgress(90);
       setBusyLabel("Publishing…");

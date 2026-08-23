@@ -34,6 +34,7 @@ export const getPublicProfile = createServerFn({ method: "GET" })
       .eq("username", data.username)
       .maybeSingle();
     if (!profile) return null;
+    if (profile.is_banned) return null;
 
     const [{ count: followers }, { count: following }, { data: videos }] =
       await Promise.all([

@@ -705,11 +705,14 @@ export type Database = {
         Row: {
           age_verified: boolean
           avatar_url: string | null
+          ban_reason: string | null
+          banned_at: string | null
           bio: string
           coin_balance: number
           created_at: string
           display_name: string
           id: string
+          is_banned: boolean
           link_url: string | null
           payouts_enabled: boolean
           rate_rewarded: boolean
@@ -721,11 +724,14 @@ export type Database = {
         Insert: {
           age_verified?: boolean
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
           bio?: string
           coin_balance?: number
           created_at?: string
           display_name?: string
           id: string
+          is_banned?: boolean
           link_url?: string | null
           payouts_enabled?: boolean
           rate_rewarded?: boolean
@@ -737,11 +743,14 @@ export type Database = {
         Update: {
           age_verified?: boolean
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
           bio?: string
           coin_balance?: number
           created_at?: string
           display_name?: string
           id?: string
+          is_banned?: boolean
           link_url?: string | null
           payouts_enabled?: boolean
           rate_rewarded?: boolean

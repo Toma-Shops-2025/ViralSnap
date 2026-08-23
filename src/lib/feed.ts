@@ -7,7 +7,9 @@ export type VideoRow = Tables<"videos"> & {
   mux_asset_status?: string | null;
   mux_playback_id?: string | null;
 };
-export type ProfileRow = Tables<"profiles">;
+export type ProfileRow = Tables<"profiles"> & {
+  is_banned?: boolean;
+};
 
 export type FeedVideo = VideoRow & {
   creator: Pick<ProfileRow, "id" | "username" | "display_name" | "avatar_url"> | null;
@@ -39,10 +41,12 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url")
+    .select("id, username, display_name, avatar_url, is_banned")
     .in("id", creatorIds);
 
-  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const profileMap = new Map(
+    (profiles ?? []).filter((p) => !p.is_banned).map((p) => [p.id, p]),
+  );
 
   let likedSet = new Set<string>();
   const { data: auth } = await supabase.auth.getUser();
@@ -55,11 +59,13 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
     likedSet = new Set((likes ?? []).map((l) => l.video_id));
   }
 
-  return videos.map((v) => ({
-    ...v,
-    creator: profileMap.get(v.creator_id) ?? null,
-    liked: likedSet.has(v.id),
-  }));
+  return videos
+    .filter((v) => profileMap.has(v.creator_id))
+    .map((v) => ({
+      ...v,
+      creator: profileMap.get(v.creator_id) ?? null,
+      liked: likedSet.has(v.id),
+    }));
 }
 
 export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
