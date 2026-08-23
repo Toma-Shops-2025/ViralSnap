@@ -5,10 +5,7 @@ import {
   Share2,
   MoreVertical,
   Gift,
-  Volume2,
-  VolumeX,
   Plus,
-  Check,
   ShoppingBag,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -25,6 +22,7 @@ interface VideoCardProps {
   video: any;
   isActive: boolean;
   isMuted: boolean;
+  volume?: number;
   onToggleMute: () => void;
 }
 
@@ -32,6 +30,7 @@ export function VideoCard({
   video,
   isActive,
   isMuted,
+  volume = 1,
   onToggleMute,
 }: VideoCardProps) {
   const { user, profile } = useAuth();
@@ -126,6 +125,7 @@ export function VideoCard({
         poster={posterUrl}
         isActive={isActive}
         isMuted={isMuted}
+        volume={volume}
         onToggleMute={onToggleMute}
       />
 

@@ -6,6 +6,7 @@ interface VideoPlayerProps {
   poster?: string | null;
   isActive: boolean;
   isMuted: boolean;
+  volume?: number;
   onToggleMute: () => void;
 }
 
@@ -14,6 +15,7 @@ export function VideoPlayer({
   poster,
   isActive,
   isMuted,
+  volume = 1,
   onToggleMute,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -80,7 +82,8 @@ export function VideoPlayer({
     const el = videoRef.current;
     if (!el) return;
     el.muted = isMuted;
-  }, [isMuted]);
+    el.volume = Math.min(1, Math.max(0, volume));
+  }, [isMuted, volume]);
 
   return (
     <div className="relative h-full w-full bg-black flex items-center justify-center overflow-hidden">

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Flame, Sparkles, Radio, Bell } from "lucide-react";
+import { Flame, Sparkles, Radio, Bell, Volume2, VolumeX } from "lucide-react";
 import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
@@ -33,6 +33,7 @@ type Tab = "foryou" | "following";
 
 function FeedPage() {
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(1);
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
 
@@ -100,16 +101,50 @@ function FeedPage() {
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
       {/* top brand bar */}
-      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <Link
-          to="/activity"
-          className="flex w-16 items-center gap-1 text-white drop-shadow"
-          aria-label="Activity"
-        >
-          <Bell className="h-5 w-5" />
-        </Link>
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+        <div className="pointer-events-auto flex w-16 flex-col items-center gap-2">
+          <Link
+            to="/activity"
+            className="flex items-center justify-center text-white drop-shadow"
+            aria-label="Activity"
+          >
+            <Bell className="h-5 w-5" />
+          </Link>
+          <button
+            type="button"
+            aria-label={muted ? "Unmute" : "Mute"}
+            onClick={() => setMuted((m) => !m)}
+            className="grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur"
+          >
+            {muted || volume === 0 ? (
+              <VolumeX className="h-4 w-4" />
+            ) : (
+              <Volume2 className="h-4 w-4" />
+            )}
+          </button>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex h-24 w-9 flex-col items-center justify-center rounded-full bg-black/40 px-1 py-2 backdrop-blur"
+          >
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={muted ? 0 : volume}
+              onChange={(e) => {
+                const v = Number.parseFloat(e.target.value);
+                setVolume(v);
+                if (v > 0 && muted) setMuted(false);
+                if (v === 0) setMuted(true);
+              }}
+              aria-label="Volume"
+              className="volume-slider h-20 w-1 cursor-pointer appearance-none rounded-full bg-white/25 [writing-mode:vertical-lr] [direction:rtl]"
+            />
+          </div>
+        </div>
 
-        <div className="flex items-center gap-4">
+        <div className="pointer-events-auto flex items-center gap-4 pt-0.5">
           <TabButton active={tab === "following"} onClick={() => setTab("following")}>
             Following
           </TabButton>
@@ -121,7 +156,7 @@ function FeedPage() {
 
         <Link
           to="/live"
-          className="flex w-16 items-center justify-end gap-1 text-xs font-bold uppercase text-white drop-shadow"
+          className="pointer-events-auto flex w-16 items-center justify-end gap-1 pt-0.5 text-xs font-bold uppercase text-white drop-shadow"
         >
           <Radio className="h-4 w-4 text-primary" /> Live
         </Link>
@@ -139,6 +174,7 @@ function FeedPage() {
                 video={video}
                 isActive={idx === activeIndex}
                 isMuted={muted}
+                volume={volume}
                 onToggleMute={() => setMuted((m) => !m)}
               />
             </div>
