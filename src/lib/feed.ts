@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { isPlayableFeedVideo } from "@/lib/video";
+import { shuffleWithSeed } from "@/lib/shuffle";
 
 export type VideoRow = Tables<"videos"> & {
   mux_asset_id?: string | null;
@@ -23,15 +24,35 @@ export type FeedPage = {
 };
 
 const FEED_PAGE_SIZE = 12;
+const BATCH = 500;
 
-/** Fisher–Yates shuffle (returns a new array, does not mutate input). */
-export function shuffle<T>(input: T[]): T[] {
-  const arr = [...input];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+/** Session seed → full shuffled library (no wrap / no endless loop). */
+const shuffledLibraryCache = new Map<number, VideoRow[]>();
+const followingLibraryCache = new Map<string, VideoRow[]>();
+
+async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
+  const rows: VideoRow[] = [];
+  for (let from = 0; ; from += BATCH) {
+    const { data, error } = await supabase
+      .from("videos")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .range(from, from + BATCH - 1);
+    if (error) throw error;
+    const batch = (data ?? []) as VideoRow[];
+    rows.push(...batch);
+    if (batch.length < BATCH) break;
   }
-  return arr;
+  return rows.filter(isPlayableFeedVideo);
+}
+
+async function getShuffledForYouLibrary(seed: number): Promise<VideoRow[]> {
+  const hit = shuffledLibraryCache.get(seed);
+  if (hit) return hit;
+  const shuffled = shuffleWithSeed(await fetchAllPublishedVideos(), seed);
+  shuffledLibraryCache.set(seed, shuffled);
+  return shuffled;
 }
 
 async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> {
@@ -88,68 +109,62 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
     }));
 }
 
+/** For You: shuffle entire library once per session seed; feed ends after last item. */
 export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
-  const { count } = await supabase
-    .from("videos")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "published");
-
-  const total = count ?? 0;
-  if (total === 0) return { items: [], hasMore: false, page };
-
-  // Calculate a random starting point based on the seed
-  const seedOffset = (seed % Math.max(1, total - FEED_PAGE_SIZE));
-  const effectiveOffset = (seedOffset + (page * FEED_PAGE_SIZE)) % Math.max(1, total);
-
-  const { data, error } = await supabase
-    .from("videos")
-    .select("*")
-    .eq("status", "published")
-    .range(effectiveOffset, effectiveOffset + FEED_PAGE_SIZE - 1);
-
-  if (error) throw error;
-
-  let rows = ((data ?? []) as VideoRow[]).filter(isPlayableFeedVideo);
-
-  // Shuffle the items locally for extra randomness
+  const library = await getShuffledForYouLibrary(seed);
+  const from = page * FEED_PAGE_SIZE;
+  const slice = library.slice(from, from + FEED_PAGE_SIZE);
   return {
-    items: shuffle(await attachCreatorsAndLikes(rows)),
-    hasMore: total > (page + 1) * FEED_PAGE_SIZE,
+    items: await attachCreatorsAndLikes(slice),
+    hasMore: from + FEED_PAGE_SIZE < library.length,
     page,
   };
 }
 
-export async function fetchFollowingFeedPage(page = 0): Promise<FeedPage> {
+/** Following: shuffle that creator set once per user+seed; feed ends after last item. */
+export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { items: [], hasMore: false, page };
 
-  const { data: follows } = await supabase
-    .from("follows")
-    .select("following_id")
-    .eq("follower_id", auth.user.id);
+  const cacheKey = `${auth.user.id}:${seed}`;
+  let library = followingLibraryCache.get(cacheKey);
 
-  const ids = (follows ?? []).map((f) => f.following_id);
-  if (ids.length === 0) return { items: [], hasMore: false, page };
+  if (!library) {
+    const { data: follows } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", auth.user.id);
+
+    const ids = (follows ?? []).map((f) => f.following_id);
+    if (ids.length === 0) return { items: [], hasMore: false, page };
+
+    const rows: VideoRow[] = [];
+    for (let from = 0; ; from += BATCH) {
+      const { data, error } = await supabase
+        .from("videos")
+        .select("*")
+        .eq("status", "published")
+        .in("creator_id", ids)
+        .order("created_at", { ascending: false })
+        .range(from, from + BATCH - 1);
+      if (error) throw error;
+      const batch = (data ?? []) as VideoRow[];
+      rows.push(...batch);
+      if (batch.length < BATCH) break;
+    }
+
+    library = shuffleWithSeed(rows.filter(isPlayableFeedVideo), seed);
+    followingLibraryCache.set(cacheKey, library);
+  }
 
   const from = page * FEED_PAGE_SIZE;
-  const to = from + FEED_PAGE_SIZE - 1;
-
-  const { data, error } = await supabase
-    .from("videos")
-    .select("*")
-    .eq("status", "published")
-    .in("creator_id", ids)
-    .order("created_at", { ascending: false })
-    .range(from, to);
-  if (error) throw error;
-  const rows = ((data ?? []) as VideoRow[]).filter(isPlayableFeedVideo);
+  const slice = library.slice(from, from + FEED_PAGE_SIZE);
   return {
-    items: shuffle(await attachCreatorsAndLikes(rows)),
-    hasMore: (data ?? []).length === FEED_PAGE_SIZE,
+    items: await attachCreatorsAndLikes(slice),
+    hasMore: from + FEED_PAGE_SIZE < library.length,
     page,
   };
 }
-
 
 export async function fetchCreatorVideos(creatorId: string): Promise<FeedVideo[]> {
   const { data, error } = await supabase
@@ -159,7 +174,7 @@ export async function fetchCreatorVideos(creatorId: string): Promise<FeedVideo[]
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return attachCreatorsAndLikes(data ?? []);
+  return attachCreatorsAndLikes(((data ?? []) as VideoRow[]).filter(isPlayableFeedVideo));
 }
 
 export async function toggleLike(videoId: string, liked: boolean) {
@@ -171,4 +186,3 @@ export async function toggleLike(videoId: string, liked: boolean) {
     await supabase.from("likes").insert({ video_id: videoId, user_id: auth.user.id });
   }
 }
-

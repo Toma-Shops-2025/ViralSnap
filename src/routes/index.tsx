@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Sparkles, Radio, Bell, Volume2, VolumeX } from "lucide-react";
 import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
+import { newSessionSeed } from "@/lib/shuffle";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
 import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
@@ -57,15 +58,17 @@ function FeedPage() {
     }
   };
 
-  // Generate a random seed once per session
-  const [sessionSeed] = useState(() => Math.floor(Math.random() * 1000));
+  // New seed every app open → full-library shuffle starts on a different video.
+  const [sessionSeed] = useState(() => newSessionSeed());
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
       queryKey: ["feed", tab, user?.id, sessionSeed],
       initialPageParam: 0,
       queryFn: ({ pageParam }) =>
-        tab === "following" ? fetchFollowingFeedPage(pageParam) : fetchFeedPage(pageParam, sessionSeed),
+        tab === "following"
+          ? fetchFollowingFeedPage(pageParam, sessionSeed)
+          : fetchFeedPage(pageParam, sessionSeed),
       getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     });
 
@@ -85,11 +88,16 @@ function FeedPage() {
   const items = useMemo(() => {
     const blocked = new Set(getBlockedCreatorIds());
     const pages = data?.pages ?? [];
-    return pages
-      .flatMap((page, pageIndex) =>
-        page.items.map((video) => ({ video, key: `${video.id}-${pageIndex}` })),
-      )
-      .filter(({ video }) => !blocked.has(video.creator_id));
+    const seen = new Set<string>();
+    const out: { video: (typeof pages)[0]["items"][0]; key: string }[] = [];
+    for (const page of pages) {
+      for (const video of page.items) {
+        if (blocked.has(video.creator_id) || seen.has(video.id)) continue;
+        seen.add(video.id);
+        out.push({ video, key: video.id });
+      }
+    }
+    return out;
   }, [data, blockedTick]);
 
   useEffect(() => {
@@ -210,6 +218,13 @@ function FeedPage() {
           ))}
           <div ref={sentinelRef} className="h-px w-full" aria-hidden />
           {isFetchingNextPage && <div className="h-20 w-full bg-black" aria-hidden />}
+          {!hasNextPage && items.length > 0 && (
+            <div className="flex h-[40vh] items-center justify-center bg-black px-8 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/35">
+                You’ve seen every video — reopen the app for a fresh shuffle
+              </p>
+            </div>
+          )}
         </div>
       ) : tab === "following" ? (
         <EmptyFollowing signedIn={!!user} />
