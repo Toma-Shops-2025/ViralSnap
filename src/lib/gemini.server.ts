@@ -5,9 +5,9 @@
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-/** Prefer Flash-Lite; fall back to Flash. Keep requests short for Netlify SSR. */
-const TEXT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"] as const;
-const FETCH_MS = 12_000;
+/** Prefer 3.6 Flash (required for new API keys); fall back to 3.5 Flash-Lite. */
+const TEXT_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite"] as const;
+const FETCH_MS = 18_000;
 
 export const GEMINI_TEXT_MODEL = TEXT_MODELS[0];
 
