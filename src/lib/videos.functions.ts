@@ -49,6 +49,7 @@ export const publishVideo = createServerFn({ method: "POST" })
     const { data: video, error } = await supabase
       .from("videos")
       .insert({
+        id: crypto.randomUUID(),
         creator_id: userId,
         title: data.title,
         caption: data.caption?.trim() ?? "",
