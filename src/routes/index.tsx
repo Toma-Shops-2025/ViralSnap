@@ -9,6 +9,7 @@ import { OnboardingWalkthrough } from "@/components/onboarding-walkthrough";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { getBlockedCreatorIds } from "@/lib/blocked-creators";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -73,12 +74,23 @@ function FeedPage() {
   const feedRef = useRef<HTMLDivElement>(null);
 
 
+  const [blockedTick, setBlockedTick] = useState(0);
+  useEffect(() => {
+    setBlockedTick((t) => t + 1);
+    const onFocus = () => setBlockedTick((t) => t + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
   const items = useMemo(() => {
+    const blocked = new Set(getBlockedCreatorIds());
     const pages = data?.pages ?? [];
-    return pages.flatMap((page, pageIndex) =>
-      page.items.map((video) => ({ video, key: `${video.id}-${pageIndex}` })),
-    );
-  }, [data]);
+    return pages
+      .flatMap((page, pageIndex) =>
+        page.items.map((video) => ({ video, key: `${video.id}-${pageIndex}` })),
+      )
+      .filter(({ video }) => !blocked.has(video.creator_id));
+  }, [data, blockedTick]);
 
   useEffect(() => {
     const root = feedRef.current;

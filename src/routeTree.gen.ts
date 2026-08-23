@@ -32,6 +32,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
+import { Route as ReportUserUserIdRouteImport } from './routes/report.user.$userId'
+import { Route as BlockUserIdRouteImport } from './routes/block.$userId'
 import { Route as ApiAdminRestoreMediaRouteImport } from './routes/api/admin/restore-media'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicMuxWebhookRouteImport } from './routes/api/public/mux/webhook'
@@ -146,6 +148,16 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportUserUserIdRoute = ReportUserUserIdRouteImport.update({
+  id: '/report/user/$userId',
+  path: '/report/user/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlockUserIdRoute = BlockUserIdRouteImport.update({
+  id: '/block/$userId',
+  path: '/block/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
   id: '/live/$streamId',
   path: '/live/$streamId',
@@ -173,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -182,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -201,6 +215,7 @@ export interface FileRoutesByTo {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -210,6 +225,7 @@ export interface FileRoutesByTo {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -230,6 +246,7 @@ export interface FileRoutesById {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -239,6 +256,7 @@ export interface FileRoutesById {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -260,6 +278,7 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
+    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -269,6 +288,7 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
+    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -288,6 +308,7 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
+    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -297,6 +318,7 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
+    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -316,6 +338,7 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
+    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -325,6 +348,7 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
+    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -345,6 +369,7 @@ export interface RootRouteChildren {
   AccountDeletionRoute: typeof AccountDeletionRoute
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
+  BlockUserIdRoute: typeof BlockUserIdRoute
   CampaignsRoute: typeof CampaignsRoute
   ChildSafetyRoute: typeof ChildSafetyRoute
   ContactRoute: typeof ContactRoute
@@ -354,6 +379,7 @@ export interface RootRouteChildren {
   GuidelinesRoute: typeof GuidelinesRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
+  ReportUserUserIdRoute: typeof ReportUserUserIdRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   ShareRoute: typeof ShareRoute
@@ -490,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/block/$userId': {
+      id: '/block/$userId'
+      path: '/block/$userId'
+      fullPath: '/block/$userId'
+      preLoaderRoute: typeof BlockUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activity': {
       id: '/activity'
       path: '/activity'
@@ -523,6 +556,13 @@ declare module '@tanstack/react-router' {
       path: '/u/$username'
       fullPath: '/u/$username'
       preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report/user/$userId': {
+      id: '/report/user/$userId'
+      path: '/report/user/$userId'
+      fullPath: '/report/user/$userId'
+      preLoaderRoute: typeof ReportUserUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live/$streamId': {
@@ -561,6 +601,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountDeletionRoute: AccountDeletionRoute,
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
+  BlockUserIdRoute: BlockUserIdRoute,
   CampaignsRoute: CampaignsRoute,
   ChildSafetyRoute: ChildSafetyRoute,
   ContactRoute: ContactRoute,
@@ -570,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuidelinesRoute: GuidelinesRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
+  ReportUserUserIdRoute: ReportUserUserIdRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   ShareRoute: ShareRoute,

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Heart,
   MessageCircle,
@@ -15,8 +15,13 @@ import { VideoPlayer } from "./video-player";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { submitReport } from "@/lib/safety.functions";
 import { ReportDialog } from "./report-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VideoCardProps {
   video: any;
@@ -201,12 +206,72 @@ export function VideoCard({
           <span className="text-xs font-bold text-white drop-shadow-md">Share</span>
         </button>
 
-        <button
-          onClick={() => setReportOpen(true)}
-          className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors"
-        >
-          <MoreVertical className="h-6 w-6 text-white" />
-        </button>
+        {video.creator_id !== user?.id && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="More options"
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors"
+              >
+                <MoreVertical className="h-6 w-6 text-white" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              side="left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (!user) {
+                    navigate({ to: "/welcome" });
+                    return;
+                  }
+                  setReportOpen(true);
+                }}
+              >
+                Report video
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (!user) {
+                    navigate({ to: "/welcome" });
+                    return;
+                  }
+                  const creatorId = video.creator_id || video.creator?.id;
+                  if (!creatorId) return;
+                  navigate({
+                    to: "/report/user/$userId",
+                    params: { userId: creatorId },
+                    search: { username: video.creator?.username },
+                  });
+                }}
+              >
+                Report creator
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-rose-400 focus:text-rose-400"
+                onSelect={() => {
+                  if (!user) {
+                    navigate({ to: "/welcome" });
+                    return;
+                  }
+                  const creatorId = video.creator_id || video.creator?.id;
+                  if (!creatorId) return;
+                  navigate({
+                    to: "/block/$userId",
+                    params: { userId: creatorId },
+                    search: { username: video.creator?.username },
+                  });
+                }}
+              >
+                Block creator
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* product tag */}
@@ -255,8 +320,9 @@ export function VideoCard({
 
       <ReportDialog
         open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        videoId={video.id}
+        onOpenChange={setReportOpen}
+        targetType="post"
+        targetId={video.id}
       />
     </div>
   );
