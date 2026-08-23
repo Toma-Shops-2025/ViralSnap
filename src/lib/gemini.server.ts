@@ -5,11 +5,10 @@
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-/** Prefer cheap Flash-Lite; fall back if a project/key can't use it yet. */
+/** Prefer cheap Flash-Lite; fall back to 3.6 Flash (2.x models are shut down). */
 const TEXT_MODELS = [
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.6-flash",
 ] as const;
 
 export const GEMINI_TEXT_MODEL = TEXT_MODELS[0];
