@@ -26,9 +26,20 @@ export type FeedPage = {
 const FEED_PAGE_SIZE = 12;
 const BATCH = 500;
 
-/** Session seed → full shuffled library (no wrap / no endless loop). */
+/** Session seed → full shuffled library; pages wrap so the feed scrolls forever. */
 const shuffledLibraryCache = new Map<number, VideoRow[]>();
 const followingLibraryCache = new Map<string, VideoRow[]>();
+
+/** Slice a page from a library, wrapping to the start after the last item. */
+function wrapPage<T>(library: T[], page: number): { slice: T[]; hasMore: boolean } {
+  if (library.length === 0) return { slice: [], hasMore: false };
+  const from = page * FEED_PAGE_SIZE;
+  const slice: T[] = [];
+  for (let i = 0; i < FEED_PAGE_SIZE; i++) {
+    slice.push(library[(from + i) % library.length]);
+  }
+  return { slice, hasMore: true };
+}
 
 async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
   const rows: VideoRow[] = [];
@@ -109,19 +120,18 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
     }));
 }
 
-/** For You: shuffle entire library once per session seed; feed ends after last item. */
+/** For You: shuffle entire library once per session seed; wrap so scroll never ends. */
 export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const library = await getShuffledForYouLibrary(seed);
-  const from = page * FEED_PAGE_SIZE;
-  const slice = library.slice(from, from + FEED_PAGE_SIZE);
+  const { slice, hasMore } = wrapPage(library, page);
   return {
     items: await attachCreatorsAndLikes(slice),
-    hasMore: from + FEED_PAGE_SIZE < library.length,
+    hasMore,
     page,
   };
 }
 
-/** Following: shuffle that creator set once per user+seed; feed ends after last item. */
+/** Following: shuffle that creator set once per user+seed; wrap so scroll never ends. */
 export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { items: [], hasMore: false, page };
@@ -157,11 +167,10 @@ export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPa
     followingLibraryCache.set(cacheKey, library);
   }
 
-  const from = page * FEED_PAGE_SIZE;
-  const slice = library.slice(from, from + FEED_PAGE_SIZE);
+  const { slice, hasMore } = wrapPage(library, page);
   return {
     items: await attachCreatorsAndLikes(slice),
-    hasMore: from + FEED_PAGE_SIZE < library.length,
+    hasMore,
     page,
   };
 }

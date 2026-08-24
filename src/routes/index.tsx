@@ -88,13 +88,12 @@ function FeedPage() {
   const items = useMemo(() => {
     const blocked = new Set(getBlockedCreatorIds());
     const pages = data?.pages ?? [];
-    const seen = new Set<string>();
     const out: { video: (typeof pages)[0]["items"][0]; key: string }[] = [];
     for (const page of pages) {
       for (const video of page.items) {
-        if (blocked.has(video.creator_id) || seen.has(video.id)) continue;
-        seen.add(video.id);
-        out.push({ video, key: video.id });
+        if (blocked.has(video.creator_id)) continue;
+        // Unique key per occurrence so wrap-around can re-show the same video.
+        out.push({ video, key: `${video.id}-${out.length}` });
       }
     }
     return out;
@@ -218,13 +217,6 @@ function FeedPage() {
           ))}
           <div ref={sentinelRef} className="h-px w-full" aria-hidden />
           {isFetchingNextPage && <div className="h-20 w-full bg-black" aria-hidden />}
-          {!hasNextPage && items.length > 0 && (
-            <div className="flex h-[40vh] items-center justify-center bg-black px-8 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/35">
-                You’ve seen every video — reopen the app for a fresh shuffle
-              </p>
-            </div>
-          )}
         </div>
       ) : tab === "following" ? (
         <EmptyFollowing signedIn={!!user} />
