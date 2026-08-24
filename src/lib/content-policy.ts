@@ -46,6 +46,9 @@ export function assertContentAllowed(fields: {
   tags?: string[];
   username?: string;
   displayName?: string;
+  productTitle?: string;
+  productUrl?: string;
+  productCta?: string;
 }) {
   const checks: Array<[string, string | undefined]> = [
     ["username", fields.username],
@@ -53,6 +56,9 @@ export function assertContentAllowed(fields: {
     ["title", fields.title],
     ["caption", fields.caption],
     ["tags", fields.tags?.join(" ")],
+    ["link label", fields.productTitle],
+    ["link", fields.productUrl],
+    ["link button", fields.productCta],
   ];
 
   for (const [label, value] of checks) {

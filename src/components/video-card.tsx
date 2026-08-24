@@ -3,10 +3,10 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  Link2,
   MoreVertical,
   Gift,
   Plus,
-  ShoppingBag,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { compact } from "@/lib/format";
@@ -290,10 +290,12 @@ export function VideoCard({
             href={video.product_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10"
+            className="flex max-w-[70vw] items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10"
           >
-            <ShoppingBag className="h-3.5 w-3.5 text-gold" />
-            Shop this item
+            <Link2 className="h-3.5 w-3.5 shrink-0 text-gold" />
+            <span className="truncate">
+              {video.product_cta || video.product_title || "Visit link"}
+            </span>
           </a>
         </div>
       )}

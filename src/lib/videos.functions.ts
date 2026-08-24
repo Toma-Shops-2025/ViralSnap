@@ -20,6 +20,10 @@ export const publishVideo = createServerFn({ method: "POST" })
     title: string;
     caption?: string;
     tags?: string[];
+    productTitle?: string | null;
+    productUrl?: string | null;
+    productCta?: string | null;
+    isAffiliate?: boolean;
   }) =>
     z
       .object({
@@ -41,6 +45,21 @@ export const publishVideo = createServerFn({ method: "POST" })
         title: z.string().min(1).max(140),
         caption: z.string().max(2000).optional(),
         tags: z.array(z.string().min(1).max(40)).max(15).optional(),
+        productTitle: z.string().max(80).nullish(),
+        productUrl: z
+          .string()
+          .url()
+          .refine((u) => {
+            try {
+              const p = new URL(u).protocol;
+              return p === "http:" || p === "https:";
+            } catch {
+              return false;
+            }
+          }, "productUrl must be http or https")
+          .nullish(),
+        productCta: z.string().max(24).nullish(),
+        isAffiliate: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -84,6 +103,9 @@ export const publishVideo = createServerFn({ method: "POST" })
       title: data.title,
       caption: data.caption,
       tags: data.tags,
+      productTitle: data.productTitle ?? undefined,
+      productUrl: data.productUrl ?? undefined,
+      productCta: data.productCta ?? undefined,
     });
 
     const { data: video, error } = await supabase
@@ -97,6 +119,10 @@ export const publishVideo = createServerFn({ method: "POST" })
         cover_url: data.coverUrl ?? null,
         tags: data.tags ?? [],
         status: "published",
+        product_title: data.productUrl ? data.productTitle?.trim() || null : null,
+        product_url: data.productUrl ?? null,
+        product_cta: data.productUrl ? data.productCta?.trim() || "Visit" : null,
+        is_affiliate: Boolean(data.productUrl && data.isAffiliate),
       })
       .select("id")
       .single();

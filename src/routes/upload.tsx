@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import {
   ArrowLeft,
   Film,
+  Link2,
   Loader2,
   Sparkles,
   Upload as UploadIcon,
@@ -28,6 +29,13 @@ export const Route = createFileRoute("/upload")({
   component: UploadPage,
 });
 
+function normalizeHttpUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 function UploadPage() {
   const { user, loading } = useAuth();
   const { isPro } = useProSubscription();
@@ -38,6 +46,10 @@ function UploadPage() {
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
   const [idea, setIdea] = useState("");
+  const [hasLink, setHasLink] = useState(false);
+  const [productTitle, setProductTitle] = useState("");
+  const [productUrl, setProductUrl] = useState("");
+  const [productCta, setProductCta] = useState("Visit");
   const [genMetaLoading, setGenMetaLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState("");
@@ -136,6 +148,19 @@ function UploadPage() {
     if (!file || !user) return toast.error("Pick a video file");
     if (!title.trim()) return toast.error("Add a title");
 
+    const linkUrl = hasLink ? normalizeHttpUrl(productUrl) : "";
+    if (hasLink) {
+      if (!linkUrl) return toast.error("Add a link URL");
+      try {
+        const parsed = new URL(linkUrl);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          return toast.error("Link must start with http:// or https://");
+        }
+      } catch {
+        return toast.error("That link doesn’t look like a valid URL");
+      }
+    }
+
     setBusy(true);
     setBusyLabel("Uploading…");
     setProgress(5);
@@ -148,6 +173,9 @@ function UploadPage() {
           .split(/[,\s]+/)
           .map((t) => t.replace(/^#/, "").trim().toLowerCase())
           .filter(Boolean),
+        productTitle: hasLink ? productTitle.trim() : undefined,
+        productUrl: hasLink ? linkUrl : undefined,
+        productCta: hasLink ? productCta.trim() : undefined,
       });
 
       const mediaUrl = await uploadVideoFile(file);
@@ -165,6 +193,10 @@ function UploadPage() {
           title: title.trim(),
           caption: caption.trim(),
           tags: tagList,
+          productTitle: hasLink ? productTitle.trim() || null : null,
+          productUrl: hasLink ? linkUrl : null,
+          productCta: hasLink ? productCta.trim() || "Visit" : null,
+          isAffiliate: hasLink,
         },
       });
 
@@ -306,6 +338,56 @@ function UploadPage() {
               className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
             />
           </Field>
+
+          <div className="rounded-md border border-gold/20 bg-card/30 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Link2 className="h-4 w-4 text-gold" />
+                  Add a link
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Website, store, merch — anything that follows our Content Policy.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={hasLink}
+                onClick={() => setHasLink((v) => !v)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${hasLink ? "bg-gold" : "bg-muted"}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${hasLink ? "translate-x-5" : ""}`}
+                />
+              </button>
+            </div>
+            {hasLink && (
+              <div className="mt-3 space-y-2">
+                <input
+                  value={productTitle}
+                  onChange={(e) => setProductTitle(e.target.value)}
+                  maxLength={80}
+                  placeholder="Link label (optional)"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+                />
+                <input
+                  value={productUrl}
+                  onChange={(e) => setProductUrl(e.target.value)}
+                  inputMode="url"
+                  placeholder="https://yourwebsite.com"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+                />
+                <input
+                  value={productCta}
+                  onChange={(e) => setProductCta(e.target.value)}
+                  maxLength={24}
+                  placeholder="Button text"
+                  className="w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-gold/50"
+                />
+              </div>
+            )}
+          </div>
 
           <div className="rounded-md border border-gold/20 bg-gold/5 p-3 text-[11px] leading-relaxed text-muted-foreground">
             By posting, you agree to our Content Policy. AI safety filters may review your video during processing.
