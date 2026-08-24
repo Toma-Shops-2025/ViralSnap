@@ -63,8 +63,10 @@ function FeedPage() {
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["feed", tab, user?.id, sessionSeed],
+      queryKey: ["feed", "loop-v2", tab, user?.id, sessionSeed],
       initialPageParam: 0,
+      staleTime: 0,
+      gcTime: 5 * 60_000,
       queryFn: ({ pageParam }) =>
         tab === "following"
           ? fetchFollowingFeedPage(pageParam, sessionSeed)
@@ -133,6 +135,12 @@ function FeedPage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [items.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Prefetch next page as the user nears the end (same pattern as AlgoRhythm).
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage || items.length === 0) return;
+    if (activeIndex >= items.length - 2) void fetchNextPage();
+  }, [activeIndex, items.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 
 

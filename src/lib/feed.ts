@@ -112,10 +112,20 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
   }
 
   return videos
-    .filter((v) => profileMap.has(v.creator_id))
+    .filter((v) => {
+      const profile = profileMap.get(v.creator_id);
+      return profile ? !profile.is_banned : true;
+    })
     .map((v) => ({
       ...v,
-      creator: profileMap.get(v.creator_id) ?? null,
+      creator:
+        profileMap.get(v.creator_id) ??
+        ({
+          id: v.creator_id,
+          username: "user",
+          display_name: "Creator",
+          avatar_url: null,
+        } as FeedVideo["creator"]),
       liked: likedSet.has(v.id),
     }));
 }
