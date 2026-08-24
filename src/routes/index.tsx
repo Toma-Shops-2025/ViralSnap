@@ -63,7 +63,7 @@ function FeedPage() {
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
-      queryKey: ["feed", "loop-v2", tab, user?.id, sessionSeed],
+      queryKey: ["feed", "loop-v3", tab, user?.id, sessionSeed],
       initialPageParam: 0,
       staleTime: 0,
       gcTime: 5 * 60_000,
@@ -71,7 +71,8 @@ function FeedPage() {
         tab === "following"
           ? fetchFollowingFeedPage(pageParam, sessionSeed)
           : fetchFeedPage(pageParam, sessionSeed),
-      getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.page + 1 : undefined,
     });
 
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -217,6 +218,7 @@ function FeedPage() {
               <VideoCard
                 video={video}
                 isActive={idx === activeIndex}
+                isNear={Math.abs(idx - activeIndex) <= 1}
                 isMuted={muted}
                 volume={volume}
                 onToggleMute={toggleMute}

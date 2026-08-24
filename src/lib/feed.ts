@@ -133,10 +133,14 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
 /** For You: shuffle entire library once per session seed; wrap so scroll never ends. */
 export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const library = await getShuffledForYouLibrary(seed);
-  const { slice, hasMore } = wrapPage(library, page);
+  if (library.length === 0) {
+    return { items: [], hasMore: false, page };
+  }
+  const { slice } = wrapPage(library, page);
   return {
     items: await attachCreatorsAndLikes(slice),
-    hasMore,
+    // Always continue — wrapPage already cycles the shuffled library.
+    hasMore: true,
     page,
   };
 }
@@ -177,10 +181,14 @@ export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPa
     followingLibraryCache.set(cacheKey, library);
   }
 
-  const { slice, hasMore } = wrapPage(library, page);
+  if (library.length === 0) {
+    return { items: [], hasMore: false, page };
+  }
+
+  const { slice } = wrapPage(library, page);
   return {
     items: await attachCreatorsAndLikes(slice),
-    hasMore,
+    hasMore: true,
     page,
   };
 }

@@ -26,6 +26,7 @@ import {
 interface VideoCardProps {
   video: any;
   isActive: boolean;
+  isNear?: boolean;
   isMuted: boolean;
   volume?: number;
   onToggleMute: () => void;
@@ -34,6 +35,7 @@ interface VideoCardProps {
 export function VideoCard({
   video,
   isActive,
+  isNear = false,
   isMuted,
   volume = 1,
   onToggleMute,
@@ -129,6 +131,7 @@ export function VideoCard({
         url={playbackUrl}
         poster={posterUrl}
         isActive={isActive}
+        isNear={isNear}
         isMuted={isMuted}
         volume={volume}
         onToggleMute={onToggleMute}
