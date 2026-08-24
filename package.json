@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "assets:generate": "npx @capacitor/assets generate --android"
+    "assets:generate": "npx @capacitor/assets generate --android --assetPath resources"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

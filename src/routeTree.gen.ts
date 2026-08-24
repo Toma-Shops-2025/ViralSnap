@@ -32,9 +32,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
-import { Route as ReportUserUserIdRouteImport } from './routes/report.user.$userId'
 import { Route as BlockUserIdRouteImport } from './routes/block.$userId'
+import { Route as ReportUserUserIdRouteImport } from './routes/report.user.$userId'
 import { Route as ApiAdminRestoreMediaRouteImport } from './routes/api/admin/restore-media'
+import { Route as ApiAdminModerateRouteImport } from './routes/api/admin/moderate'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicMuxWebhookRouteImport } from './routes/api/public/mux/webhook'
 
@@ -148,9 +149,9 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportUserUserIdRoute = ReportUserUserIdRouteImport.update({
-  id: '/report/user/$userId',
-  path: '/report/user/$userId',
+const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
+  id: '/live/$streamId',
+  path: '/live/$streamId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlockUserIdRoute = BlockUserIdRouteImport.update({
@@ -158,14 +159,19 @@ const BlockUserIdRoute = BlockUserIdRouteImport.update({
   path: '/block/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LiveStreamIdRoute = LiveStreamIdRouteImport.update({
-  id: '/live/$streamId',
-  path: '/live/$streamId',
+const ReportUserUserIdRoute = ReportUserUserIdRouteImport.update({
+  id: '/report/user/$userId',
+  path: '/report/user/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminRestoreMediaRoute = ApiAdminRestoreMediaRouteImport.update({
   id: '/api/admin/restore-media',
   path: '/api/admin/restore-media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminModerateRoute = ApiAdminModerateRouteImport.update({
+  id: '/api/admin/moderate',
+  path: '/api/admin/moderate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPaymentsWebhookRoute =
@@ -185,7 +191,6 @@ export interface FileRoutesByFullPath {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
-  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -195,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
-  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -203,10 +207,13 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
+  '/api/admin/moderate': typeof ApiAdminModerateRoute
   '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -215,7 +222,6 @@ export interface FileRoutesByTo {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
-  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -225,7 +231,6 @@ export interface FileRoutesByTo {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
-  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -233,10 +238,13 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live': typeof LiveIndexRoute
+  '/api/admin/moderate': typeof ApiAdminModerateRoute
   '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -246,7 +254,6 @@ export interface FileRoutesById {
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
-  '/block/$userId': typeof BlockUserIdRoute
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -256,7 +263,6 @@ export interface FileRoutesById {
   '/guidelines': typeof GuidelinesRoute
   '/privacy': typeof PrivacyRoute
   '/refunds': typeof RefundsRoute
-  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/share': typeof ShareRoute
@@ -264,10 +270,13 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
   '/live/': typeof LiveIndexRoute
+  '/api/admin/moderate': typeof ApiAdminModerateRoute
   '/api/admin/restore-media': typeof ApiAdminRestoreMediaRoute
+  '/report/user/$userId': typeof ReportUserUserIdRoute
   '/api/public/mux/webhook': typeof ApiPublicMuxWebhookRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -278,7 +287,6 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
-    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -288,7 +296,6 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
-    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -296,10 +303,13 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
     | '/live/'
+    | '/api/admin/moderate'
     | '/api/admin/restore-media'
+    | '/report/user/$userId'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -308,7 +318,6 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
-    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -318,7 +327,6 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
-    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -326,10 +334,13 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
     | '/live'
+    | '/api/admin/moderate'
     | '/api/admin/restore-media'
+    | '/report/user/$userId'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   id:
@@ -338,7 +349,6 @@ export interface FileRouteTypes {
     | '/account-deletion'
     | '/activity'
     | '/auth'
-    | '/block/$userId'
     | '/campaigns'
     | '/child-safety'
     | '/contact'
@@ -348,7 +358,6 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/privacy'
     | '/refunds'
-    | '/report/user/$userId'
     | '/search'
     | '/settings'
     | '/share'
@@ -356,10 +365,13 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
     | '/live/'
+    | '/api/admin/moderate'
     | '/api/admin/restore-media'
+    | '/report/user/$userId'
     | '/api/public/mux/webhook'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -369,7 +381,6 @@ export interface RootRouteChildren {
   AccountDeletionRoute: typeof AccountDeletionRoute
   ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
-  BlockUserIdRoute: typeof BlockUserIdRoute
   CampaignsRoute: typeof CampaignsRoute
   ChildSafetyRoute: typeof ChildSafetyRoute
   ContactRoute: typeof ContactRoute
@@ -379,7 +390,6 @@ export interface RootRouteChildren {
   GuidelinesRoute: typeof GuidelinesRoute
   PrivacyRoute: typeof PrivacyRoute
   RefundsRoute: typeof RefundsRoute
-  ReportUserUserIdRoute: typeof ReportUserUserIdRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   ShareRoute: typeof ShareRoute
@@ -387,10 +397,13 @@ export interface RootRouteChildren {
   UploadRoute: typeof UploadRoute
   WalletRoute: typeof WalletRoute
   WelcomeRoute: typeof WelcomeRoute
+  BlockUserIdRoute: typeof BlockUserIdRoute
   LiveStreamIdRoute: typeof LiveStreamIdRoute
   UUsernameRoute: typeof UUsernameRoute
   LiveIndexRoute: typeof LiveIndexRoute
+  ApiAdminModerateRoute: typeof ApiAdminModerateRoute
   ApiAdminRestoreMediaRoute: typeof ApiAdminRestoreMediaRoute
+  ReportUserUserIdRoute: typeof ReportUserUserIdRoute
   ApiPublicMuxWebhookRoute: typeof ApiPublicMuxWebhookRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -516,13 +529,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/block/$userId': {
-      id: '/block/$userId'
-      path: '/block/$userId'
-      fullPath: '/block/$userId'
-      preLoaderRoute: typeof BlockUserIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/activity': {
       id: '/activity'
       path: '/activity'
@@ -558,13 +564,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/report/user/$userId': {
-      id: '/report/user/$userId'
-      path: '/report/user/$userId'
-      fullPath: '/report/user/$userId'
-      preLoaderRoute: typeof ReportUserUserIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/live/$streamId': {
       id: '/live/$streamId'
       path: '/live/$streamId'
@@ -572,11 +571,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveStreamIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/block/$userId': {
+      id: '/block/$userId'
+      path: '/block/$userId'
+      fullPath: '/block/$userId'
+      preLoaderRoute: typeof BlockUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report/user/$userId': {
+      id: '/report/user/$userId'
+      path: '/report/user/$userId'
+      fullPath: '/report/user/$userId'
+      preLoaderRoute: typeof ReportUserUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/restore-media': {
       id: '/api/admin/restore-media'
       path: '/api/admin/restore-media'
       fullPath: '/api/admin/restore-media'
       preLoaderRoute: typeof ApiAdminRestoreMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/moderate': {
+      id: '/api/admin/moderate'
+      path: '/api/admin/moderate'
+      fullPath: '/api/admin/moderate'
+      preLoaderRoute: typeof ApiAdminModerateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/payments/webhook': {
@@ -601,7 +621,6 @@ const rootRouteChildren: RootRouteChildren = {
   AccountDeletionRoute: AccountDeletionRoute,
   ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
-  BlockUserIdRoute: BlockUserIdRoute,
   CampaignsRoute: CampaignsRoute,
   ChildSafetyRoute: ChildSafetyRoute,
   ContactRoute: ContactRoute,
@@ -611,7 +630,6 @@ const rootRouteChildren: RootRouteChildren = {
   GuidelinesRoute: GuidelinesRoute,
   PrivacyRoute: PrivacyRoute,
   RefundsRoute: RefundsRoute,
-  ReportUserUserIdRoute: ReportUserUserIdRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   ShareRoute: ShareRoute,
@@ -619,10 +637,13 @@ const rootRouteChildren: RootRouteChildren = {
   UploadRoute: UploadRoute,
   WalletRoute: WalletRoute,
   WelcomeRoute: WelcomeRoute,
+  BlockUserIdRoute: BlockUserIdRoute,
   LiveStreamIdRoute: LiveStreamIdRoute,
   UUsernameRoute: UUsernameRoute,
   LiveIndexRoute: LiveIndexRoute,
+  ApiAdminModerateRoute: ApiAdminModerateRoute,
   ApiAdminRestoreMediaRoute: ApiAdminRestoreMediaRoute,
+  ReportUserUserIdRoute: ReportUserUserIdRoute,
   ApiPublicMuxWebhookRoute: ApiPublicMuxWebhookRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }

@@ -1,7 +1,7 @@
 import { j as jsxRuntimeExports } from "../_libs/react.mjs";
 import { L as Link } from "../_libs/tanstack__react-router.mjs";
 import { L as LegalLayout } from "./legal-layout-gn4XHtJj.mjs";
-import { M as Mail, Z as ShieldAlert, F as FileText, o as CreditCard, a4 as TriangleAlert } from "../_libs/lucide-react.mjs";
+import { M as Mail, X as ShieldAlert, F as FileText, p as CreditCard, a1 as TriangleAlert } from "../_libs/lucide-react.mjs";
 import "../_libs/tanstack__router-core.mjs";
 import "../_libs/tanstack__history.mjs";
 import "../_libs/cookie-es.mjs";

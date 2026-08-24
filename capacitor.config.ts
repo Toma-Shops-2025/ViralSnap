@@ -5,10 +5,13 @@ const config: CapacitorConfig = {
   appName: "ViralSnap",
   webDir: "dist",
   server: {
-    androidScheme: 'https'
+    // Live SSR site — required for TanStack Start hydration in the WebView.
+    url: "https://viralsnap.online",
+    cleartext: false,
   },
   android: {
-    webContentsDebuggingEnabled: true,
+    allowMixedContent: false,
+    webContentsDebuggingEnabled: false,
   },
   plugins: {
     Keyboard: {
