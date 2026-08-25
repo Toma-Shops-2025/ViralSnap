@@ -18,6 +18,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   videoId: string;
+  onCommentAdded?: () => void;
 };
 
 type CommentItem = {
@@ -72,7 +73,7 @@ async function fetchCommentsAndMetadata(videoId: string) {
   return { video, comments: items, pinned };
 }
 
-export function CommentsSheet({ open, onOpenChange, videoId }: Props) {
+export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -103,6 +104,7 @@ export function CommentsSheet({ open, onOpenChange, videoId }: Props) {
     setPosting(false);
     if (!error) {
       setText("");
+      onCommentAdded?.();
       queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
     }

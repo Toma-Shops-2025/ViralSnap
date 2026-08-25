@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toastErrorMessage } from "@/lib/utils";
 import { assertContentAllowed } from "@/lib/content-policy";
+import { captureCoverFromVideoFile } from "@/lib/video-cover";
 
 export const Route = createFileRoute("/upload")({
   head: () => ({
@@ -143,6 +144,19 @@ function UploadPage() {
     return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
   };
 
+  const uploadCoverBlob = async (blob: Blob): Promise<string | null> => {
+    const path = `${user!.id}/${crypto.randomUUID()}.jpg`;
+    const { error } = await supabase.storage.from("covers").upload(path, blob, {
+      contentType: "image/jpeg",
+      upsert: false,
+    });
+    if (error) {
+      console.warn("Cover upload failed:", error.message);
+      return null;
+    }
+    return supabase.storage.from("covers").getPublicUrl(path).data.publicUrl;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !user) return toast.error("Pick a video file");
@@ -179,7 +193,18 @@ function UploadPage() {
       });
 
       const mediaUrl = await uploadVideoFile(file);
-      setProgress(90);
+      setProgress(88);
+      setBusyLabel("Making thumbnail…");
+
+      let coverUrl: string | null = null;
+      try {
+        const coverBlob = await captureCoverFromVideoFile(file);
+        if (coverBlob) coverUrl = await uploadCoverBlob(coverBlob);
+      } catch (coverErr) {
+        console.warn("Cover capture skipped:", coverErr);
+      }
+
+      setProgress(92);
       setBusyLabel("Publishing…");
 
       const tagList = tags
@@ -190,6 +215,7 @@ function UploadPage() {
       await publishVideo({
         data: {
           mediaUrl,
+          coverUrl: coverUrl ?? undefined,
           title: title.trim(),
           caption: caption.trim(),
           tags: tagList,

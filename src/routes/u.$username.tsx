@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BottomNav } from "@/components/bottom-nav";
 import { GiftDialog } from "@/components/gift-dialog";
 import { VideoCard } from "@/components/video-card";
+import { VideoGridThumb } from "@/components/video-grid-thumb";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
@@ -411,7 +412,7 @@ function ProfilePage() {
         <div className="grid grid-cols-3 gap-1">
           {videos.map((v: Vid, i: number) => (
             <button key={v.id} onClick={() => { setActiveIdx(i); setViewMode("feed"); }} className="group relative aspect-[9/14] overflow-hidden rounded-lg bg-card">
-              {v.cover_url ? <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" /> : <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />}
+              <VideoGridThumb video={v} alt={v.title || "Video"} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-1.5 left-1.5 flex items-center gap-2 text-[10px] text-white/90">
                 <span className="flex items-center gap-0.5"><Play className="h-2.5 w-2.5 fill-white" /> {compact(v.view_count)}</span>
@@ -424,6 +425,15 @@ function ProfilePage() {
       </div>
 
       <BottomNav />
+
+      {!isMe && data?.profile && (
+        <GiftDialog
+          open={showGift}
+          onOpenChange={setShowGift}
+          receiverId={data.profile.id}
+          receiverName={data.profile.username}
+        />
+      )}
     </div>
   );
 }

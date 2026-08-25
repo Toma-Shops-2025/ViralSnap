@@ -76,7 +76,7 @@ function EarningsPage() {
     queryKey: ["connect-status", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const res = await statusFn({ data: { environment: getStripeEnvironment() }, context: { supabase, userId: user?.id } });
+      const res = await statusFn({ data: { environment: getStripeEnvironment() } });
       if ("error" in res) throw new Error(res.error);
       return res;
     },
@@ -95,7 +95,6 @@ function EarningsPage() {
           returnUrl: `${window.location.origin}/earnings`,
           environment: getStripeEnvironment(),
         },
-        context: { supabase, userId: user?.id }
       });
       if ("error" in res) throw new Error(res.error);
       setOnboardUrl(res.url);
@@ -120,7 +119,6 @@ function EarningsPage() {
     try {
       const res = await payoutFn({
         data: { coins, environment: getStripeEnvironment() },
-        context: { supabase, userId: user?.id }
       });
       if ("error" in res) throw new Error(res.error);
       toast.success(`Payout of $${(res.amountCents / 100).toFixed(2)} sent!`);

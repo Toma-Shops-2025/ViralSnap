@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ReportDialog } from "./report-dialog";
+import { CommentsSheet } from "./comments-sheet";
+import { GiftDialog } from "./gift-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,8 +46,11 @@ export function VideoCard({
   const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(video.like_count || 0);
+  const [comments, setComments] = useState(video.comment_count || 0);
   const [following, setFollowing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
 
   // Check initial like/follow status
   useEffect(() => {
@@ -178,19 +183,35 @@ export function VideoCard({
         </button>
 
         <button
-          onClick={() => {}} // Open comments
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setCommentsOpen(true);
+          }}
           className="flex flex-col items-center gap-1"
         >
           <div className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors">
             <MessageCircle className="h-6 w-6 text-white" />
           </div>
           <span className="text-xs font-bold text-white drop-shadow-md">
-            {compact(video.comment_count)}
+            {compact(comments)}
           </span>
         </button>
 
         <button
-          onClick={() => {}} // Open gift dialog
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!user) {
+              navigate({ to: "/welcome" });
+              return;
+            }
+            if (video.creator_id === user.id) {
+              toast.info("You can't gift your own post");
+              return;
+            }
+            setGiftOpen(true);
+          }}
           className="flex flex-col items-center gap-1"
         >
           <div className="rounded-full bg-black/30 p-2.5 backdrop-blur-md hover:bg-black/50 transition-colors">
@@ -337,6 +358,21 @@ export function VideoCard({
         onOpenChange={setReportOpen}
         targetType="post"
         targetId={video.id}
+      />
+
+      <CommentsSheet
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+        videoId={video.id}
+        onCommentAdded={() => setComments((n: number) => n + 1)}
+      />
+
+      <GiftDialog
+        open={giftOpen}
+        onOpenChange={setGiftOpen}
+        receiverId={video.creator_id}
+        receiverName={video.creator?.username ?? "creator"}
+        videoId={video.id}
       />
     </div>
   );

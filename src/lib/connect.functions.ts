@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -12,8 +13,15 @@ type ConnectStatus = {
   detailsSubmitted: boolean;
 };
 
-// Reads the creator's Connect account status and syncs the cached flag.
-export const getConnectStatus = async ({ data, context }: { data: { environment: StripeEnv }, context: any }): Promise<ConnectStatus | { error: string }> => {
+type PayoutResult =
+  | { success: true; amountCents: number; balance: number }
+  | { error: string };
+
+/** Reads the creator's Connect account status and syncs the cached flag. */
+export const getConnectStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<ConnectStatus | { error: string }> => {
     const { supabase, userId } = context;
     const { data: profile } = await supabase
       .from("profiles")
@@ -42,10 +50,13 @@ export const getConnectStatus = async ({ data, context }: { data: { environment:
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
-  };
+  });
 
-// Creates (or reuses) a Connect Express account and returns an onboarding URL.
-export const createConnectOnboardingLink = async ({ data, context }: { data: { email?: string; returnUrl: string; environment: StripeEnv }, context: any }): Promise<{ url: string } | { error: string }> => {
+/** Creates (or reuses) a Connect Express account and returns an onboarding URL. */
+export const createConnectOnboardingLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { email?: string; returnUrl: string; environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<{ url: string } | { error: string }> => {
     const { supabase, userId } = context;
     try {
       const stripe = createStripeClient(data.environment);
@@ -58,8 +69,6 @@ export const createConnectOnboardingLink = async ({ data, context }: { data: { e
 
       let accountId = profile?.stripe_connect_account_id as string | null | undefined;
 
-      // Each creator's public, crawlable profile — required by Stripe for
-      // marketplace/Connect verification.
       const profileUrl = profile?.username
         ? `https://viralsnap.online/u/${profile.username}`
         : "https://viralsnap.online";
@@ -80,8 +89,6 @@ export const createConnectOnboardingLink = async ({ data, context }: { data: { e
           country: "US",
           business_type: "individual",
           ...(data.email && { email: data.email }),
-          // Transfers-only payout model (separate charges & transfers); the
-          // platform collects payments, then transfers earnings on payout.
           capabilities: { transfers: { requested: true } },
           business_profile: businessProfile,
           metadata: { userId },
@@ -92,7 +99,6 @@ export const createConnectOnboardingLink = async ({ data, context }: { data: { e
           .update({ stripe_connect_account_id: accountId })
           .eq("id", userId);
       } else {
-        // Backfill business_profile.url on accounts created before this was set.
         try {
           await stripe.accounts.update(accountId, {
             business_profile: businessProfile,
@@ -113,14 +119,13 @@ export const createConnectOnboardingLink = async ({ data, context }: { data: { e
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }
-  };
+  });
 
-type PayoutResult =
-  | { success: true; amountCents: number; balance: number }
-  | { error: string };
-
-// Reserves coins, then transfers funds to the creator's connected account.
-export const requestCreatorPayout = async ({ data, context }: { data: { coins: number; environment: StripeEnv }, context: any }): Promise<PayoutResult> => {
+/** Reserves coins, then transfers funds to the creator's connected account. */
+export const requestCreatorPayout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { coins: number; environment: StripeEnv }) => data)
+  .handler(async ({ data, context }): Promise<PayoutResult> => {
     const { supabase, userId } = context;
 
     const { data: profile } = await supabase
@@ -134,7 +139,6 @@ export const requestCreatorPayout = async ({ data, context }: { data: { coins: n
       return { error: "Connect a payout account before requesting a payout." };
     }
 
-    // Atomically reserve coins (deducts balance + logs withdrawal).
     const { data: reserved, error: reserveError } = await supabase.rpc("request_payout", {
       _coins: data.coins,
     });
@@ -162,8 +166,7 @@ export const requestCreatorPayout = async ({ data, context }: { data: { coins: n
 
       return { success: true, amountCents: result.amount_cents, balance: result.balance };
     } catch (error) {
-      // Refund the reserved coins on failure.
       await supabaseAdmin.rpc("refund_payout", { _request_id: result.request_id });
       return { error: getStripeErrorMessage(error) };
     }
-  };
+  });

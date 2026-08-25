@@ -42,6 +42,13 @@ export function GiftDialog({ open, onOpenChange, receiverId, receiverName, video
     if (balance < gift.coins) {
       toast.error("Not enough ViralCoins", {
         description: "Top up your wallet to keep the support flowing.",
+        action: {
+          label: "Buy coins",
+          onClick: () => {
+            onOpenChange(false);
+            navigate({ to: "/wallet" });
+          },
+        },
       });
       return;
     }

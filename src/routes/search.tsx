@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search as SearchIcon, ArrowLeft, Play, Heart, Hash, UserCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { BottomNav } from "@/components/bottom-nav";
+import { VideoGridThumb } from "@/components/video-grid-thumb";
 import { supabase } from "@/integrations/supabase/client";
 import { compact } from "@/lib/format";
 import type { Tables } from "@/integrations/supabase/types";
@@ -166,11 +167,7 @@ function SearchPage() {
             <div className="grid grid-cols-3 gap-1">
               {data?.videos.map((v) => (
                 <div key={v.id} className="relative aspect-[9/14] overflow-hidden rounded-lg bg-card">
-                  {v.cover_url ? (
-                    <img src={v.cover_url} alt={v.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />
-                  )}
+                  <VideoGridThumb video={v} alt={v.title || "Video"} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                   <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center gap-2 text-[10px] text-white/90">
                     <span className="flex items-center gap-0.5">
