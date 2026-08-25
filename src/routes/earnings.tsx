@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { BottomNav } from "@/components/bottom-nav";
+import { VideoGridThumb } from "@/components/video-grid-thumb";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -229,11 +230,13 @@ function EarningsPage() {
                   <span className="font-display text-lg font-bold text-muted-foreground">
                     {i + 1}
                   </span>
-                  {v.cover_url ? (
-                    <img src={v.cover_url} alt={v.title} className="h-14 w-10 rounded-md object-cover" />
-                  ) : (
-                    <video src={v.media_url ?? undefined} muted playsInline preload="metadata" className="h-14 w-10 rounded-md object-cover" />
-                  )}
+                  <div className="h-14 w-10 shrink-0 overflow-hidden rounded-md bg-card">
+                    <VideoGridThumb
+                      video={v}
+                      alt={v.title || v.caption || "Video"}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{v.title || v.caption || "Untitled"}</p>
                     <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
