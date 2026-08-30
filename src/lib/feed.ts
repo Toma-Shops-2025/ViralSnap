@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { isPlayableFeedVideo } from "@/lib/video";
-import { shuffleWithSeed } from "@/lib/shuffle";
+import { shuffleWithSeed, sliceShuffledPage } from "@/lib/shuffle";
 
 export type VideoRow = Tables<"videos"> & {
   mux_asset_id?: string | null;
@@ -26,20 +26,9 @@ export type FeedPage = {
 const FEED_PAGE_SIZE = 12;
 const BATCH = 500;
 
-/** Session seed → full shuffled library; pages wrap so the feed scrolls forever. */
-const shuffledLibraryCache = new Map<number, VideoRow[]>();
+/** Cached published libraries (unshuffled); order is applied per lap via session seed. */
+const forYouLibraryCache = new Map<number, VideoRow[]>();
 const followingLibraryCache = new Map<string, VideoRow[]>();
-
-/** Slice a page from a library, wrapping to the start after the last item. */
-function wrapPage<T>(library: T[], page: number): { slice: T[]; hasMore: boolean } {
-  if (library.length === 0) return { slice: [], hasMore: false };
-  const from = page * FEED_PAGE_SIZE;
-  const slice: T[] = [];
-  for (let i = 0; i < FEED_PAGE_SIZE; i++) {
-    slice.push(library[(from + i) % library.length]);
-  }
-  return { slice, hasMore: true };
-}
 
 async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
   const rows: VideoRow[] = [];
@@ -58,12 +47,12 @@ async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
   return rows.filter(isPlayableFeedVideo);
 }
 
-async function getShuffledForYouLibrary(seed: number): Promise<VideoRow[]> {
-  const hit = shuffledLibraryCache.get(seed);
+async function getForYouLibrary(): Promise<VideoRow[]> {
+  const hit = forYouLibraryCache.get(0);
   if (hit) return hit;
-  const shuffled = shuffleWithSeed(await fetchAllPublishedVideos(), seed);
-  shuffledLibraryCache.set(seed, shuffled);
-  return shuffled;
+  const library = await fetchAllPublishedVideos();
+  forYouLibraryCache.set(0, library);
+  return library;
 }
 
 async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> {
@@ -130,27 +119,26 @@ async function attachCreatorsAndLikes(videos: VideoRow[]): Promise<FeedVideo[]> 
     }));
 }
 
-/** For You: shuffle entire library once per session seed; wrap so scroll never ends. */
+/** For You: shuffle per lap; each full pass through the library gets a new order. */
 export async function fetchFeedPage(page = 0, seed = 0): Promise<FeedPage> {
-  const library = await getShuffledForYouLibrary(seed);
+  const library = await getForYouLibrary();
   if (library.length === 0) {
     return { items: [], hasMore: false, page };
   }
-  const { slice } = wrapPage(library, page);
+  const { slice } = sliceShuffledPage(library, seed, page, FEED_PAGE_SIZE);
   return {
     items: await attachCreatorsAndLikes(slice),
-    // Always continue — wrapPage already cycles the shuffled library.
     hasMore: true,
     page,
   };
 }
 
-/** Following: shuffle that creator set once per user+seed; wrap so scroll never ends. */
+/** Following: shuffle per lap for that creator set. */
 export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPage> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { items: [], hasMore: false, page };
 
-  const cacheKey = `${auth.user.id}:${seed}`;
+  const cacheKey = auth.user.id;
   let library = followingLibraryCache.get(cacheKey);
 
   if (!library) {
@@ -177,7 +165,7 @@ export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPa
       if (batch.length < BATCH) break;
     }
 
-    library = shuffleWithSeed(rows.filter(isPlayableFeedVideo), seed);
+    library = rows.filter(isPlayableFeedVideo);
     followingLibraryCache.set(cacheKey, library);
   }
 
@@ -185,7 +173,7 @@ export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPa
     return { items: [], hasMore: false, page };
   }
 
-  const { slice } = wrapPage(library, page);
+  const { slice } = sliceShuffledPage(library, seed, page, FEED_PAGE_SIZE);
   return {
     items: await attachCreatorsAndLikes(slice),
     hasMore: true,
