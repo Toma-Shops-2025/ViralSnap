@@ -33,6 +33,7 @@ import { Route as LiveIndexRouteImport } from './routes/live.index'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as LiveStreamIdRouteImport } from './routes/live.$streamId'
 import { Route as BlockUserIdRouteImport } from './routes/block.$userId'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ReportUserUserIdRouteImport } from './routes/report.user.$userId'
 import { Route as ApiAdminRestoreMediaRouteImport } from './routes/api/admin/restore-media'
 import { Route as ApiAdminModerateRouteImport } from './routes/api/admin/moderate'
@@ -159,6 +160,11 @@ const BlockUserIdRoute = BlockUserIdRouteImport.update({
   path: '/block/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ReportUserUserIdRoute = ReportUserUserIdRouteImport.update({
   id: '/report/user/$userId',
   path: '/report/user/$userId',
@@ -190,7 +196,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -221,7 +228,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -253,7 +261,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account-deletion': typeof AccountDeletionRoute
   '/activity': typeof ActivityRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/campaigns': typeof CampaignsRoute
   '/child-safety': typeof ChildSafetyRoute
   '/contact': typeof ContactRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadRoute
   '/wallet': typeof WalletRoute
   '/welcome': typeof WelcomeRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/block/$userId': typeof BlockUserIdRoute
   '/live/$streamId': typeof LiveStreamIdRoute
   '/u/$username': typeof UUsernameRoute
@@ -303,6 +312,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/auth/callback'
     | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/auth/callback'
     | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/wallet'
     | '/welcome'
+    | '/auth/callback'
     | '/block/$userId'
     | '/live/$streamId'
     | '/u/$username'
@@ -380,7 +392,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountDeletionRoute: typeof AccountDeletionRoute
   ActivityRoute: typeof ActivityRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CampaignsRoute: typeof CampaignsRoute
   ChildSafetyRoute: typeof ChildSafetyRoute
   ContactRoute: typeof ContactRoute
@@ -578,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlockUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/report/user/$userId': {
       id: '/report/user/$userId'
       path: '/report/user/$userId'
@@ -616,11 +635,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountDeletionRoute: AccountDeletionRoute,
   ActivityRoute: ActivityRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   CampaignsRoute: CampaignsRoute,
   ChildSafetyRoute: ChildSafetyRoute,
   ContactRoute: ContactRoute,
