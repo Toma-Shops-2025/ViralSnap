@@ -91,18 +91,13 @@ export const createCoinCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        // Full end-to-end compliance handling: Stripe calculates, collects,
-        // files and remits tax, plus fraud/dispute/support coverage.
-        // `managed_payments` is newer than the pinned SDK types, so cast.
-        ...({ managed_payments: { enabled: true } } as object),
         payment_intent_data: { description: product.name },
         metadata: {
           userId,
           coins: String(coins),
           priceId: data.priceId,
-          managed_payments: "true",
         },
-      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
+      });
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
@@ -151,12 +146,10 @@ export const createSupporterCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        ...({ managed_payments: { enabled: true } } as object),
         metadata: {
           userId: subscriberId,
           creatorId: data.creatorId,
           coins: String(SUPPORTER_MONTHLY_COINS),
-          managed_payments: "true",
         },
         subscription_data: {
           metadata: {
@@ -165,7 +158,7 @@ export const createSupporterCheckoutSession = createServerFn({ method: "POST" })
             coins: String(SUPPORTER_MONTHLY_COINS),
           },
         },
-      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
+      });
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
@@ -218,10 +211,9 @@ export const createProCheckoutSession = createServerFn({ method: "POST" })
         ui_mode: "embedded_page",
         return_url: data.returnUrl,
         customer: customerId,
-        ...({ managed_payments: { enabled: true } } as object),
-        metadata: { userId, plan: "pro", managed_payments: "true" },
+        metadata: { userId, plan: "pro" },
         subscription_data: { metadata: { userId, plan: "pro" } },
-      } as Parameters<typeof stripe.checkout.sessions.create>[0]);
+      });
 
       return { clientSecret: session.client_secret ?? "" };
     } catch (error) {
