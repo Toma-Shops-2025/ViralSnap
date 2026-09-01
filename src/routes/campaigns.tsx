@@ -24,6 +24,75 @@ import type { Tables, Database } from "@/integrations/supabase/types";
 type Campaign = Tables<"campaigns">;
 type Category = Database["public"]["Enums"]["campaign_category"];
 
+type SampleBrand = {
+  display_name: string;
+  username: string;
+};
+
+type DisplayCampaign = Campaign & {
+  isSample?: boolean;
+  sampleBrand?: SampleBrand;
+};
+
+const SAMPLE_CAMPAIGNS: DisplayCampaign[] = [
+  {
+    id: "sample-fashion-1",
+    brand_id: "sample",
+    title: "Summer Lookbook Reels",
+    description: "Create 3 short reels showcasing our new summer collection. Tag @glowskin and use #GlowSummer.",
+    budget: 2500,
+    category: "fashion",
+    status: "active",
+    application_count: 18,
+    deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    isSample: true,
+    sampleBrand: { display_name: "GlowSkin Co.", username: "glowskin" },
+  },
+  {
+    id: "sample-beauty-1",
+    brand_id: "sample",
+    title: "Morning Skincare Routine UGC",
+    description: "Film an authentic 30–60s get-ready clip featuring our vitamin C serum. Natural lighting preferred.",
+    budget: 5000,
+    category: "beauty",
+    status: "active",
+    application_count: 42,
+    deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    isSample: true,
+    sampleBrand: { display_name: "Luma Beauty", username: "lumabeauty" },
+  },
+  {
+    id: "sample-tech-1",
+    brand_id: "sample",
+    title: "Wireless Earbuds Unboxing",
+    description: "Unbox and demo our new earbuds in a punchy vertical short. Highlight battery life and fit.",
+    budget: 8000,
+    category: "tech",
+    status: "active",
+    application_count: 31,
+    deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 28).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    isSample: true,
+    sampleBrand: { display_name: "Pulse Audio", username: "pulseaudio" },
+  },
+  {
+    id: "sample-food-1",
+    brand_id: "sample",
+    title: "Restaurant POV Taste Test",
+    description: "Visit any participating location and film a POV tasting video. Show the vibe and your honest reaction.",
+    budget: 3500,
+    category: "food",
+    status: "active",
+    application_count: 27,
+    deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    isSample: true,
+    sampleBrand: { display_name: "Crave Kitchen", username: "cravekitchen" },
+  },
+];
+
 const CATEGORIES: Category[] = [
   "fashion", "beauty", "tech", "food", "fitness", "gaming", "lifestyle", "music", "travel", "education",
 ];
@@ -65,7 +134,9 @@ function CampaignsPage() {
   const [showCreate, setShowCreate] = useState(false);
 
   const { data } = useQuery({ queryKey: ["campaigns"], queryFn: fetchCampaigns });
-  const campaigns = (data?.campaigns ?? []).filter((c) => filter === "all" || c.category === filter);
+  const realCampaigns = (data?.campaigns ?? []).filter((c) => filter === "all" || c.category === filter);
+  const sampleCampaigns = SAMPLE_CAMPAIGNS.filter((c) => filter === "all" || c.category === filter);
+  const campaigns: DisplayCampaign[] = [...realCampaigns, ...sampleCampaigns];
 
   return (
     <div className="min-h-[100dvh] pb-28">
@@ -102,13 +173,21 @@ function CampaignsPage() {
           <p className="py-16 text-center text-sm text-muted-foreground">No campaigns in this category yet.</p>
         )}
         {campaigns.map((c) => {
-          const b = data?.brands.get(c.brand_id);
+          const b = c.isSample
+            ? c.sampleBrand
+            : data?.brands.get(c.brand_id);
           return (
-            <div key={c.id} className="rounded-3xl border border-border bg-card p-4">
+            <div
+              key={c.id}
+              className={cn(
+                "rounded-3xl border border-border bg-card p-4",
+                c.isSample && "border-dashed border-muted-foreground/30",
+              )}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  {b?.avatar_url ? (
-                    <img src={b.avatar_url} alt={b.username} className="h-9 w-9 rounded-full object-cover" />
+                  {!c.isSample && (b as { avatar_url?: string } | undefined)?.avatar_url ? (
+                    <img src={(b as { avatar_url: string }).avatar_url} alt={(b as { username?: string }).username} className="h-9 w-9 rounded-full object-cover" />
                   ) : (
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-fire text-sm font-bold text-primary-foreground">
                       {(b?.display_name ?? "B").charAt(0).toUpperCase()}
@@ -119,7 +198,14 @@ function CampaignsPage() {
                     <p className="text-xs text-muted-foreground">@{b?.username ?? "brand"} · {timeAgo(c.created_at)}</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold capitalize text-gold">{c.category}</span>
+                <div className="flex flex-col items-end gap-1">
+                  {c.isSample && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Sample
+                    </span>
+                  )}
+                  <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-semibold capitalize text-gold">{c.category}</span>
+                </div>
               </div>
 
               <h2 className="mt-3 font-display text-lg font-bold">{c.title}</h2>
@@ -140,11 +226,19 @@ function CampaignsPage() {
               </div>
 
               <Button
-                onClick={() => (user ? setApplyTo(c) : navigate({ to: "/welcome" }))}
-                disabled={user?.id === c.brand_id}
+                onClick={() => {
+                  if (c.isSample) {
+                    toast.info("Sample campaign", {
+                      description: "Real brand deals from verified partners will appear here.",
+                    });
+                    return;
+                  }
+                  user ? setApplyTo(c) : navigate({ to: "/welcome" });
+                }}
+                disabled={!c.isSample && user?.id === c.brand_id}
                 className="mt-4 w-full rounded-full bg-gradient-fire text-primary-foreground shadow-glow hover:opacity-90"
               >
-                {user?.id === c.brand_id ? "Your campaign" : "Apply now"}
+                {c.isSample ? "Sample preview" : user?.id === c.brand_id ? "Your campaign" : "Apply now"}
               </Button>
             </div>
           );
