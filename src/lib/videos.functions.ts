@@ -2,15 +2,30 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertContentAllowed } from "@/lib/content-policy";
+import { createR2PresignedUpload, isAllowedMediaUrl, type R2MediaKind } from "@/lib/r2.server";
 
-const isVideosBucketUrl = (u: string) => {
-  try {
-    const path = new URL(u).pathname;
-    return path.includes("/storage/v1/object/public/videos/");
-  } catch {
-    return false;
-  }
-};
+export const createMediaUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { kind: R2MediaKind; contentType: string; ext: string; byteSize: number }) =>
+      z
+        .object({
+          kind: z.enum(["videos", "covers", "avatars"]),
+          contentType: z.string().min(3).max(120),
+          ext: z.string().min(1).max(12),
+          byteSize: z.number().int().positive().max(520 * 1024 * 1024),
+        })
+        .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    return createR2PresignedUpload({
+      userId,
+      kind: data.kind,
+      ext: data.ext,
+      contentType: data.contentType,
+    });
+  });
 
 export const publishVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -30,17 +45,11 @@ export const publishVideo = createServerFn({ method: "POST" })
         mediaUrl: z
           .string()
           .url()
-          .refine(isVideosBucketUrl, "mediaUrl must point to the videos bucket"),
+          .refine((u) => isAllowedMediaUrl(u, "videos"), "mediaUrl must be a ViralSnap video URL"),
         coverUrl: z
           .string()
           .url()
-          .refine((u) => {
-            try {
-              return new URL(u).pathname.includes("/storage/v1/object/public/covers/");
-            } catch {
-              return false;
-            }
-          }, "coverUrl must point to the covers bucket")
+          .refine((u) => isAllowedMediaUrl(u, "covers"), "coverUrl must be a ViralSnap cover URL")
           .nullish(),
         title: z.string().min(1).max(140),
         caption: z.string().max(2000).optional(),

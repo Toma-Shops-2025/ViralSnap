@@ -59,7 +59,8 @@ const BLOCKED_MEDIA_HOSTS = [
   "commondatastorage.googleapis.com/gtv-videos-bucket/sample",
 ];
 
-function isCurrentSupabaseVideoUrl(url: string): boolean {
+function isPlayableMediaUrl(url: string): boolean {
+  if (url.includes(".r2.dev/") || url.includes("/viralsnap/videos/")) return true;
   return url.includes(".supabase.co/storage/v1/object/public/videos/");
 }
 
@@ -71,7 +72,6 @@ export function isPlayableFeedVideo(
   if (!url) return false;
   if (BLOCKED_MEDIA_HOSTS.some((host) => url.includes(host))) return false;
 
-  // New uploads land in Supabase Storage as direct MP4. Legacy Mux HLS rows
-  // often stall on pause with the current player and are excluded from feed.
-  return isCurrentSupabaseVideoUrl(url);
+  // R2 (new) or Supabase Storage (legacy). Mux-only rows stay excluded.
+  return isPlayableMediaUrl(url);
 }

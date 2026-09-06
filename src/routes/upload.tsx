@@ -10,11 +10,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useProSubscription } from "@/hooks/use-pro";
-import { publishVideo } from "@/lib/videos.functions";
+import { publishVideo, createMediaUpload } from "@/lib/videos.functions";
 import { generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { toastErrorMessage } from "@/lib/utils";
 import { assertContentAllowed } from "@/lib/content-policy";
 import { captureCoverFromVideoFile } from "@/lib/video-cover";
@@ -116,45 +115,56 @@ function UploadPage() {
 
   const uploadVideoFile = async (videoFile: File): Promise<string> => {
     const ext = videoFile.name.split(".").pop() ?? "mp4";
-    const path = `${user!.id}/${crypto.randomUUID()}.${ext}`;
-
-    // Prefer the authenticated Supabase client (same keys as login) instead of a
-    // separate XHR apikey header that can drift from Netlify VITE_ vars.
-    const { error } = await supabase.storage.from("videos").upload(path, videoFile, {
-      contentType: videoFile.type || "video/mp4",
-      upsert: false,
+    const { uploadUrl, publicUrl } = await createMediaUpload({
+      data: {
+        kind: "videos",
+        contentType: videoFile.type || "video/mp4",
+        ext,
+        byteSize: videoFile.size,
+      },
     });
 
-    if (error) {
-      const msg = error.message || "Upload failed";
-      if (/invalid api key/i.test(msg)) {
-        throw new Error(
-          "Supabase storage rejected the API key. Check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Netlify match your Supabase project anon key, then redeploy.",
-        );
+    const put = await fetch(uploadUrl, {
+      method: "PUT",
+      body: videoFile,
+      headers: { "Content-Type": videoFile.type || "video/mp4" },
+    });
+    if (!put.ok) {
+      const detail = await put.text().catch(() => "");
+      if (put.status === 413) {
+        throw new Error("Upload exceeds size limit. Compress the video and try again.");
       }
-      if (/maximum allowed size|exceeded/i.test(msg)) {
-        throw new Error(
-          "Upload exceeds storage size limit. In Supabase SQL Editor, run supabase/migrations/20260823120000_storage_videos_size_limit.sql, then try again.",
-        );
-      }
-      throw new Error(msg);
+      throw new Error(detail || `R2 upload failed (${put.status})`);
     }
 
     setProgress(85);
-    return supabase.storage.from("videos").getPublicUrl(path).data.publicUrl;
+    return publicUrl;
   };
 
   const uploadCoverBlob = async (blob: Blob): Promise<string | null> => {
-    const path = `${user!.id}/${crypto.randomUUID()}.jpg`;
-    const { error } = await supabase.storage.from("covers").upload(path, blob, {
-      contentType: "image/jpeg",
-      upsert: false,
-    });
-    if (error) {
-      console.warn("Cover upload failed:", error.message);
+    try {
+      const { uploadUrl, publicUrl } = await createMediaUpload({
+        data: {
+          kind: "covers",
+          contentType: "image/jpeg",
+          ext: "jpg",
+          byteSize: blob.size,
+        },
+      });
+      const put = await fetch(uploadUrl, {
+        method: "PUT",
+        body: blob,
+        headers: { "Content-Type": "image/jpeg" },
+      });
+      if (!put.ok) {
+        console.warn("Cover upload failed:", put.status);
+        return null;
+      }
+      return publicUrl;
+    } catch (e) {
+      console.warn("Cover upload failed:", e);
       return null;
     }
-    return supabase.storage.from("covers").getPublicUrl(path).data.publicUrl;
   };
 
   const submit = async (e: React.FormEvent) => {

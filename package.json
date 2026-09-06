@@ -12,9 +12,11 @@
     "assets:generate": "npx @capacitor/assets generate --android --assetPath resources"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@capacitor/android": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@capawesome/capacitor-android-edge-to-edge-support": "^8.0.8",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
