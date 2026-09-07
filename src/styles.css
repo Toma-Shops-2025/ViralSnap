@@ -227,7 +227,8 @@
     background: linear-gradient(135deg, oklch(0.9 0.12 85), var(--gold));
     -webkit-background-clip: text;
     background-clip: text;
-    color: transparent;
+    -webkit-text-fill-color: transparent;
+    color: var(--gold); /* fallback when background-clip text fails (some WebViews) */
   }
   .bg-gradient-gold {
     background: linear-gradient(135deg, oklch(0.9 0.12 85), var(--gold));

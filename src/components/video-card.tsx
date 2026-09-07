@@ -307,30 +307,26 @@ export function VideoCard({
         </button>
       </div>
 
-      {/* product tag */}
-      {video.product_url && (
-        <div className="absolute bottom-28 left-4 z-20">
-          <a
-            href={video.product_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex max-w-[70vw] items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10"
-          >
-            <Link2 className="h-3.5 w-3.5 shrink-0 text-gold" />
-            <span className="truncate">
-              {video.product_cta || video.product_title || "Visit link"}
-            </span>
-          </a>
-        </div>
-      )}
-
-      {/* bottom info */}
+      {/* bottom info + optional product link (stacked so the CTA never covers caption) */}
       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pb-12 pt-12">
-        <div className="space-y-1.5">
+        <div className="space-y-2 pr-16">
+          {video.product_url && (
+            <a
+              href={video.product_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex max-w-full items-center gap-2 rounded-full bg-black/50 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md border border-white/10"
+            >
+              <Link2 className="h-3.5 w-3.5 shrink-0 text-gold" />
+              <span className="truncate">
+                {video.product_cta || video.product_title || "Visit link"}
+              </span>
+            </a>
+          )}
           <Link
             to="/u/$username"
             params={{ username: video.creator.username }}
-            className="font-display text-base font-bold text-white hover:underline"
+            className="block font-display text-base font-bold text-white hover:underline"
           >
             @{video.creator.username}
           </Link>

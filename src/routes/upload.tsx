@@ -42,6 +42,7 @@ function UploadPage() {
   const { user, loading } = useAuth();
   const { isPro } = useProSubscription();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -240,6 +241,8 @@ function UploadPage() {
 
       setProgress(100);
       toast.success("Posted");
+      clearFeedLibraryCaches();
+      void queryClient.invalidateQueries({ queryKey: ["feed"] });
       navigate({ to: "/", replace: true });
     } catch (err) {
       console.error(err);
@@ -262,7 +265,7 @@ function UploadPage() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h1 className="font-display text-xl tracking-tight text-gradient-gold">New post</h1>
+          <h1 className="font-display text-xl tracking-tight text-gold">New post</h1>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             Video. Made to go viral.
           </p>
