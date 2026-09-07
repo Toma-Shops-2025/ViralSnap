@@ -11,6 +11,8 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useProSubscription } from "@/hooks/use-pro";
 import { publishVideo, createMediaUpload } from "@/lib/videos.functions";
+import { clearFeedLibraryCaches } from "@/lib/feed";
+import { useQueryClient } from "@tanstack/react-query";
 import { generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";

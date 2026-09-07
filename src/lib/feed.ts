@@ -30,6 +30,12 @@ const BATCH = 500;
 const forYouLibraryCache = new Map<number, VideoRow[]>();
 const followingLibraryCache = new Map<string, VideoRow[]>();
 
+/** Drop in-memory feed libraries (e.g. after publish, or when returning to an empty feed). */
+export function clearFeedLibraryCaches() {
+  forYouLibraryCache.clear();
+  followingLibraryCache.clear();
+}
+
 async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
   const rows: VideoRow[] = [];
   for (let from = 0; ; from += BATCH) {
@@ -49,9 +55,11 @@ async function fetchAllPublishedVideos(): Promise<VideoRow[]> {
 
 async function getForYouLibrary(): Promise<VideoRow[]> {
   const hit = forYouLibraryCache.get(0);
-  if (hit) return hit;
+  // Never keep an empty cache — uploads after first open would stay invisible.
+  if (hit && hit.length > 0) return hit;
   const library = await fetchAllPublishedVideos();
-  forYouLibraryCache.set(0, library);
+  if (library.length > 0) forYouLibraryCache.set(0, library);
+  else forYouLibraryCache.delete(0);
   return library;
 }
 
@@ -166,7 +174,8 @@ export async function fetchFollowingFeedPage(page = 0, seed = 0): Promise<FeedPa
     }
 
     library = rows.filter(isPlayableFeedVideo);
-    followingLibraryCache.set(cacheKey, library);
+    if (library.length > 0) followingLibraryCache.set(cacheKey, library);
+    else followingLibraryCache.delete(cacheKey);
   }
 
   if (library.length === 0) {

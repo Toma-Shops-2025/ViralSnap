@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Sparkles, Radio, Bell, Volume2, VolumeX } from "lucide-react";
-import { fetchFeedPage, fetchFollowingFeedPage } from "@/lib/feed";
+import { fetchFeedPage, fetchFollowingFeedPage, clearFeedLibraryCaches } from "@/lib/feed";
 import { newSessionSeed } from "@/lib/shuffle";
 import { VideoCard } from "@/components/video-card";
 import { BottomNav } from "@/components/bottom-nav";
@@ -38,6 +38,7 @@ function FeedPage() {
   const [volume, setVolume] = useState(1);
   const [tab, setTab] = useState<Tab>("foryou");
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const unmuteFeed = () => {
     setMuted(false);
@@ -83,10 +84,19 @@ function FeedPage() {
   const [blockedTick, setBlockedTick] = useState(0);
   useEffect(() => {
     setBlockedTick((t) => t + 1);
-    const onFocus = () => setBlockedTick((t) => t + 1);
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
+    const refresh = () => {
+      clearFeedLibraryCaches();
+      void queryClient.invalidateQueries({ queryKey: ["feed"] });
+      setBlockedTick((t) => t + 1);
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refresh();
+    });
+    return () => {
+      window.removeEventListener("focus", refresh);
+    };
+  }, [queryClient]);
 
   const items = useMemo(() => {
     const blocked = new Set(getBlockedCreatorIds());
