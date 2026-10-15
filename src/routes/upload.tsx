@@ -97,8 +97,11 @@ function UploadPage() {
     }
     setGenMetaLoading(true);
     try {
+      // The Stripe environment only selects which Pro subscription to check.
+      // While the generator is open to every signed-in account, that lookup is skipped.
+      const environment = AI_POST_GENERATOR_OPEN_TO_ALL ? "sandbox" : getStripeEnvironment();
       const meta = await generatePostContent({
-        data: { idea: seed, environment: getStripeEnvironment() },
+        data: { idea: seed, environment },
       });
       if ("error" in meta) {
         toast.error(toastErrorMessage(meta.error, "Could not generate caption"));
