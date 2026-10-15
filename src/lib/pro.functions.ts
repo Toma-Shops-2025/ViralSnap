@@ -15,9 +15,16 @@ export type GeneratedPost = {
 type GenerateResult = GeneratedPost | { error: string };
 
 /**
- * Pro-only AI helper. Takes a short topic prompt and returns a punchy title,
- * caption, and hashtag set for a new post. Gated server-side against an active
- * ViralSnap Pro subscription so the feature can't be unlocked from the client.
+ * While true, any signed-in account can use Generate title, caption & hashtags.
+ * Set to false to require ViralSnap Pro again (admins still bypass that check).
+ */
+export const AI_POST_GENERATOR_OPEN_TO_ALL = true;
+
+/**
+ * AI helper for a new post. Takes a short topic prompt and returns a punchy
+ * title, caption, and hashtag set. Signed-in access is controlled by
+ * AI_POST_GENERATOR_OPEN_TO_ALL; when that is false, an active ViralSnap Pro
+ * subscription is required so the feature can't be unlocked from the client.
  */
 export const generatePostContent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -28,36 +35,39 @@ export const generatePostContent = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<GenerateResult> => {
     const { supabase, userId, claims } = context;
-    const claimEmail =
-      typeof claims?.email === "string" ? claims.email.trim().toLowerCase() : "";
-    const emailAdmin = claimEmail === "admin@viralsnap.online";
 
-    const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
+    if (!AI_POST_GENERATOR_OPEN_TO_ALL) {
+      const claimEmail =
+        typeof claims?.email === "string" ? claims.email.trim().toLowerCase() : "";
+      const emailAdmin = claimEmail === "admin@viralsnap.online";
 
-    if (!isAdmin && !emailAdmin) {
-      const { data: pro } = await supabase
-        .from("pro_subscriptions")
-        .select("status, current_period_end")
-        .eq("user_id", userId)
-        .eq("environment", data.environment)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: isAdmin } = await supabase.rpc("has_role", {
+        _user_id: userId,
+        _role: "admin",
+      });
 
-      const active =
-        pro &&
-        ((["active", "trialing"].includes(pro.status) &&
-          (!pro.current_period_end ||
-            new Date(pro.current_period_end) > new Date())) ||
-          (pro.status === "canceled" &&
-            pro.current_period_end &&
-            new Date(pro.current_period_end) > new Date()));
+      if (!isAdmin && !emailAdmin) {
+        const { data: pro } = await supabase
+          .from("pro_subscriptions")
+          .select("status, current_period_end")
+          .eq("user_id", userId)
+          .eq("environment", data.environment)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (!active) {
-        return { error: "ViralSnap Pro is required to use the AI generators." };
+        const active =
+          pro &&
+          ((["active", "trialing"].includes(pro.status) &&
+            (!pro.current_period_end ||
+              new Date(pro.current_period_end) > new Date())) ||
+            (pro.status === "canceled" &&
+              pro.current_period_end &&
+              new Date(pro.current_period_end) > new Date()));
+
+        if (!active) {
+          return { error: "ViralSnap Pro is required to use the AI generators." };
+        }
       }
     }
 

@@ -7,7 +7,8 @@ import { useIsAdmin } from "@/hooks/use-admin";
 /**
  * Reads the current user's ViralSnap Pro status from the pro_subscriptions
  * table, scoped to the active Stripe environment. Client-side gate for UX only —
- * the AI generators re-check Pro status server-side before running.
+ * upload size limits still use this. The post AI generator follows
+ * AI_POST_GENERATOR_OPEN_TO_ALL and re-checks Pro on the server when that is false.
  */
 export function useProSubscription() {
   const { user } = useAuth();
