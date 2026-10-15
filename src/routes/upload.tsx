@@ -13,7 +13,7 @@ import { useProSubscription } from "@/hooks/use-pro";
 import { publishVideo, createMediaUpload } from "@/lib/videos.functions";
 import { clearFeedLibraryCaches } from "@/lib/feed";
 import { useQueryClient } from "@tanstack/react-query";
-import { generatePostContent } from "@/lib/pro.functions";
+import { AI_POST_GENERATOR_OPEN_TO_ALL, generatePostContent } from "@/lib/pro.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { toast } from "sonner";
 import { toastErrorMessage } from "@/lib/utils";
@@ -41,6 +41,7 @@ function normalizeHttpUrl(raw: string): string {
 function UploadPage() {
   const { user, loading } = useAuth();
   const { isPro } = useProSubscription();
+  const canGeneratePostCopy = AI_POST_GENERATOR_OPEN_TO_ALL || isPro;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -84,7 +85,7 @@ function UploadPage() {
   };
 
   const handleGenerateMeta = async () => {
-    if (!isPro) {
+    if (!canGeneratePostCopy) {
       toast.error("AI captions are a ViralSnap Pro feature");
       navigate({ to: "/settings" });
       return;
@@ -274,7 +275,7 @@ function UploadPage() {
 
       <div className="mx-auto max-w-md px-5 pb-24 pt-6">
         <form onSubmit={submit} className="space-y-4">
-          {!isPro && (
+          {!canGeneratePostCopy && (
             <Link
               to="/settings"
               className="block rounded-md border border-gold/40 bg-gradient-to-r from-gold/10 to-transparent p-3 text-xs"
