@@ -37,7 +37,7 @@ Step "Capacitor sync (Forcing fresh public assets)"
 if (Test-Path "android/app/src/main/assets/public") {
     Remove-Item "android/app/src/main/assets/public" -Recurse -Force
 }
-npx cap sync android
+npm run cap:sync:android
 
 Step "Bumping versionCode"
 $gradle = "android/app/build.gradle"

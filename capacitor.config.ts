@@ -1,3 +1,5 @@
+/// <reference types="@capawesome/capacitor-android-edge-to-edge-support" />
+
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
@@ -14,9 +16,19 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
   },
   plugins: {
+    SystemBars: {
+      // Let @capawesome/...-edge-to-edge-support own WebView insets (Play edge-to-edge guidance).
+      insetsHandling: "disable",
+    },
+    EdgeToEdge: {
+      backgroundColor: "#000000",
+      statusBarColor: "#000000",
+      navigationBarColor: "#000000",
+    },
     Keyboard: {
       resize: "native",
-      resizeOnFullScreen: true,
+      // Must stay false when using the EdgeToEdge plugin (Capawesome).
+      resizeOnFullScreen: false,
     },
   },
 };

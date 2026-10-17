@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { syncAndroidSystemUi } from "@/lib/android-system-ui";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -53,6 +54,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const resolved = theme === "system" ? getSystemTheme() : theme;
     setResolvedTheme(resolved);
     applyTheme(resolved);
+    void syncAndroidSystemUi(resolved);
 
     if (theme !== "system" || typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -60,6 +62,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const next = mq.matches ? "dark" : "light";
       setResolvedTheme(next);
       applyTheme(next);
+      void syncAndroidSystemUi(next);
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
