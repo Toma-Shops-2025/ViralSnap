@@ -15,7 +15,7 @@ Install these. Reboot if asked.
    powershell -c "irm bun.sh/install.ps1 | iex"
    ```
 4. **Android Studio** — https://developer.android.com/studio (lets the wizard install the Android SDK)
-5. **Java JDK 17** — bundled with Android Studio. Install from https://adoptium.net if `bunx cap sync` complains.
+5. **Java JDK 17** — bundled with Android Studio. Install from https://adoptium.net if `npm run cap:sync:android` complains.
 
 After installing, **close and reopen PowerShell**.
 
@@ -47,7 +47,7 @@ bun install
 bun run build
 bun run assets:generate
 bunx cap add android
-bunx cap sync
+npm run cap:sync:android
 bunx cap open android
 ```
 
@@ -107,7 +107,7 @@ git pull
 bun install
 bun run build
 bun run assets:generate
-bunx cap sync
+npm run cap:sync:android
 ```
 
 Then in Android Studio: bump `versionCode` in `android/app/build.gradle` (1 → 2 → 3…), Build → Generate Signed App Bundle → same keystore from Part E.

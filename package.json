@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "assets:generate": "npx @capacitor/assets generate --android --assetPath resources"
+    "assets:generate": "npx @capacitor/assets generate --android --assetPath resources",
+    "cap:sync:android": "npx cap sync android && node scripts/patch-android.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",

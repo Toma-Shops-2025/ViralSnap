@@ -16,7 +16,7 @@ bun install
 bun run build
 
 Step "Syncing Capacitor..."
-bunx cap sync android
+npm run cap:sync:android
 
 Step "Keystore credentials (typing is hidden)"
 $storePassSecure = Read-Host "Keystore password" -AsSecureString
