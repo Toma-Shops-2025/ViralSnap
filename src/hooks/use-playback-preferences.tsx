@@ -17,6 +17,12 @@ export type PlaybackPreferences = {
   dataSaver: boolean;
   /** When true, the feed opens muted until the viewer unmutes. */
   startMuted: boolean;
+  /** On cellular / metered data, only play when the user taps the video. */
+  wifiOnlyPlayback: boolean;
+  /** Softer scrolling and fewer motion effects. */
+  reduceMotion: boolean;
+  /** Show on-screen captions from the post caption while watching. */
+  showCaptions: boolean;
 };
 
 const STORAGE_KEY = "viralsnap-playback-preferences";
@@ -27,7 +33,12 @@ const DEFAULTS: PlaybackPreferences = {
   clearDisplay: false,
   dataSaver: false,
   startMuted: true,
+  wifiOnlyPlayback: false,
+  reduceMotion: false,
+  showCaptions: true,
 };
+
+export const PIP_REQUEST_EVENT = "viralsnap-request-pip";
 
 type PlaybackPreferencesContextValue = PlaybackPreferences & {
   setAutoScroll: (value: boolean) => void;
@@ -35,7 +46,11 @@ type PlaybackPreferencesContextValue = PlaybackPreferences & {
   setClearDisplay: (value: boolean) => void;
   setDataSaver: (value: boolean) => void;
   setStartMuted: (value: boolean) => void;
+  setWifiOnlyPlayback: (value: boolean) => void;
+  setReduceMotion: (value: boolean) => void;
+  setShowCaptions: (value: boolean) => void;
   updatePreferences: (patch: Partial<PlaybackPreferences>) => void;
+  requestPictureInPicture: () => void;
 };
 
 const PlaybackPreferencesContext =
@@ -56,6 +71,9 @@ function parseStored(raw: string | null): PlaybackPreferences {
       clearDisplay: parsed.clearDisplay ?? DEFAULTS.clearDisplay,
       dataSaver: parsed.dataSaver ?? DEFAULTS.dataSaver,
       startMuted: parsed.startMuted ?? DEFAULTS.startMuted,
+      wifiOnlyPlayback: parsed.wifiOnlyPlayback ?? DEFAULTS.wifiOnlyPlayback,
+      reduceMotion: parsed.reduceMotion ?? DEFAULTS.reduceMotion,
+      showCaptions: parsed.showCaptions ?? DEFAULTS.showCaptions,
     };
   } catch {
     return DEFAULTS;
@@ -100,6 +118,29 @@ export function PlaybackPreferencesProvider({ children }: { children: ReactNode 
     (value: boolean) => updatePreferences({ startMuted: value }),
     [updatePreferences],
   );
+  const setWifiOnlyPlayback = useCallback(
+    (value: boolean) => updatePreferences({ wifiOnlyPlayback: value }),
+    [updatePreferences],
+  );
+  const setReduceMotion = useCallback(
+    (value: boolean) => updatePreferences({ reduceMotion: value }),
+    [updatePreferences],
+  );
+  const setShowCaptions = useCallback(
+    (value: boolean) => updatePreferences({ showCaptions: value }),
+    [updatePreferences],
+  );
+
+  const requestPictureInPicture = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(PIP_REQUEST_EVENT));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("reduce-motion", prefs.reduceMotion);
+  }, [prefs.reduceMotion]);
 
   const value = useMemo(
     () => ({
@@ -109,7 +150,11 @@ export function PlaybackPreferencesProvider({ children }: { children: ReactNode 
       setClearDisplay,
       setDataSaver,
       setStartMuted,
+      setWifiOnlyPlayback,
+      setReduceMotion,
+      setShowCaptions,
       updatePreferences,
+      requestPictureInPicture,
     }),
     [
       prefs,
@@ -118,7 +163,11 @@ export function PlaybackPreferencesProvider({ children }: { children: ReactNode 
       setClearDisplay,
       setDataSaver,
       setStartMuted,
+      setWifiOnlyPlayback,
+      setReduceMotion,
+      setShowCaptions,
       updatePreferences,
+      requestPictureInPicture,
     ],
   );
 

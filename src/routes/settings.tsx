@@ -17,6 +17,14 @@ import {
   Volume2,
   Moon,
   Clock,
+  Bell,
+  MessageCircle,
+  Gift,
+  Radio,
+  Subtitles,
+  Sparkles,
+  WifiOff,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -31,6 +39,13 @@ import {
   usePlaybackPreferences,
 } from "@/hooks/use-playback-preferences";
 import { useTheme, type Theme } from "@/hooks/use-theme";
+import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
+import { clearFeedSignals } from "@/lib/feed-signals";
+import {
+  getMutedWords,
+  parseMutedWordsInput,
+  setMutedWords,
+} from "@/lib/muted-words";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — ViralSnap" }] }),
@@ -42,8 +57,10 @@ function SettingsPage() {
   const { isPro } = useProSubscription();
   const { theme, setTheme } = useTheme();
   const playback = usePlaybackPreferences();
+  const notifications = useNotificationPreferences();
   const speedOptions: PlaybackSpeed[] = [0.5, 1, 1.25, 1.5, 2];
   const navigate = useNavigate();
+  const [mutedWordsDraft, setMutedWordsDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [editName, setEditName] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -62,6 +79,10 @@ function SettingsPage() {
       setBio(profile.bio || "");
     }
   }, [profile]);
+
+  useEffect(() => {
+    setMutedWordsDraft(getMutedWords().join(", "));
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -356,7 +377,38 @@ function SettingsPage() {
               checked={playback.startMuted}
               onCheckedChange={playback.setStartMuted}
             />
+            <SettingToggleRow
+              icon={WifiOff}
+              label="Wi‑Fi only playback"
+              description="On cellular, tap to play instead of autoplay"
+              checked={playback.wifiOnlyPlayback}
+              onCheckedChange={playback.setWifiOnlyPlayback}
+            />
+            <SettingToggleRow
+              icon={Subtitles}
+              label="Captions"
+              description="Show post captions on videos"
+              checked={playback.showCaptions}
+              onCheckedChange={playback.setShowCaptions}
+            />
+            <SettingToggleRow
+              icon={Sparkles}
+              label="Reduce motion"
+              description="Gentler feed scrolling"
+              checked={playback.reduceMotion}
+              onCheckedChange={playback.setReduceMotion}
+            />
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              clearFeedSignals();
+              toast.success("Cleared “Not interested” choices");
+            }}
+            className="mt-3 w-full rounded-2xl border border-border bg-card px-4 py-3 text-left text-sm font-semibold text-foreground transition-colors hover:bg-secondary/30"
+          >
+            Reset “Not interested” list
+          </button>
         </section>
 
         {/* appearance */}
@@ -388,20 +440,79 @@ function SettingsPage() {
           </div>
         </section>
 
-        {/* notifications placeholder */}
+        {/* notifications */}
         <section>
           <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             Notifications
           </h2>
+          <p className="mb-3 px-1 text-xs text-muted-foreground">
+            Saved on this device — push delivery syncs when the app registers
+            your device.
+          </p>
           <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+            <SettingToggleRow
+              icon={MessageCircle}
+              label="Comments"
+              description="When someone comments on your videos"
+              checked={notifications.pushComments}
+              onCheckedChange={notifications.setPushComments}
+            />
+            <SettingToggleRow
+              icon={Bell}
+              label="Likes & follows"
+              description="Hearts and new followers"
+              checked={notifications.pushLikes}
+              onCheckedChange={notifications.setPushLikes}
+            />
+            <SettingToggleRow
+              icon={Gift}
+              label="Gifts"
+              description="When you receive a gift"
+              checked={notifications.pushGifts}
+              onCheckedChange={notifications.setPushGifts}
+            />
+            <SettingToggleRow
+              icon={Radio}
+              label="Live"
+              description="Creators you follow go live"
+              checked={notifications.pushLive}
+              onCheckedChange={notifications.setPushLive}
+            />
             <SettingToggleRow
               icon={Mail}
               label="Email updates"
               description="Product news and payout summaries"
-              checked={true}
-              onCheckedChange={() =>
-                toast.message("Email preferences are coming soon")
-              }
+              checked={notifications.emailUpdates}
+              onCheckedChange={notifications.setEmailUpdates}
+            />
+          </div>
+        </section>
+
+        {/* safety */}
+        <section>
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Comments & safety
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-sm font-medium">Muted words</span>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Hide comments containing these words and block posting them.
+              Separate with commas.
+            </p>
+            <textarea
+              value={mutedWordsDraft}
+              onChange={(e) => setMutedWordsDraft(e.target.value)}
+              onBlur={() => {
+                const words = parseMutedWordsInput(mutedWordsDraft);
+                setMutedWords(words);
+                toast.success("Muted words saved");
+              }}
+              rows={3}
+              placeholder="spam, scam, …"
+              className="mt-3 w-full resize-none rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
             />
           </div>
         </section>

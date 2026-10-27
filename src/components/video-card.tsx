@@ -7,7 +7,12 @@ import {
   MoreVertical,
   Gift,
   Plus,
+  HeartOff,
 } from "lucide-react";
+import {
+  markCreatorNotInterested,
+  markVideoNotInterested,
+} from "@/lib/feed-signals";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { compact } from "@/lib/format";
 import { getVideoPlaybackUrl, getVideoPosterUrl } from "@/lib/video";
@@ -36,6 +41,9 @@ interface VideoCardProps {
   playbackRate?: number;
   onEnded?: () => void;
   clearDisplay?: boolean;
+  showCaptions?: boolean;
+  allowAutoplay?: boolean;
+  onNotInterested?: () => void;
 }
 
 export function VideoCard({
@@ -49,6 +57,9 @@ export function VideoCard({
   playbackRate = 1,
   onEnded,
   clearDisplay = false,
+  showCaptions = true,
+  allowAutoplay = true,
+  onNotInterested,
 }: VideoCardProps) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -151,7 +162,22 @@ export function VideoCard({
         loop={loop}
         playbackRate={playbackRate}
         onEnded={onEnded}
+        allowAutoplay={allowAutoplay}
       />
+
+      {showCaptions && (video.caption || video.title) && (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-28 z-[15] px-4"
+          aria-live="polite"
+        >
+          <p className="mx-auto max-w-md rounded-lg bg-black/55 px-3 py-2 text-center text-sm font-medium leading-snug text-white backdrop-blur-sm">
+            {video.title && (
+              <span className="font-bold">{video.title} </span>
+            )}
+            {video.caption}
+          </p>
+        </div>
+      )}
 
       {/* side actions */}
       {!clearDisplay && (
@@ -259,6 +285,16 @@ export function VideoCard({
               <>
                 <DropdownMenuItem
                   onSelect={() => {
+                    markVideoNotInterested(video.id);
+                    onNotInterested?.();
+                    toast.success("We'll show fewer videos like this");
+                  }}
+                >
+                  <HeartOff className="mr-2 h-4 w-4" />
+                  Not interested
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
                     if (!user) {
                       navigate({ to: "/welcome" });
                       return;
@@ -284,6 +320,20 @@ export function VideoCard({
                   }}
                 >
                   Report creator
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    const creatorId = video.creator_id || video.creator?.id;
+                    if (!creatorId) return;
+                    markCreatorNotInterested(creatorId);
+                    onNotInterested?.();
+                    toast.success(
+                      `We'll show less from @${video.creator?.username ?? "this creator"}`,
+                    );
+                  }}
+                >
+                  <HeartOff className="mr-2 h-4 w-4" />
+                  Not interested in creator
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-rose-400 focus:text-rose-400"
@@ -344,9 +394,16 @@ export function VideoCard({
           >
             @{video.creator.username}
           </Link>
-          <p className="line-clamp-2 text-sm text-white/90 leading-snug">
-            <span className="font-bold">{video.title}</span> {video.caption}
-          </p>
+          {!showCaptions && (
+            <p className="line-clamp-2 text-sm text-white/90 leading-snug">
+              <span className="font-bold">{video.title}</span> {video.caption}
+            </p>
+          )}
+          {showCaptions && video.title && (
+            <p className="line-clamp-1 text-sm font-bold text-white/90">
+              {video.title}
+            </p>
+          )}
           {video.tags && video.tags.length > 0 && (
             <div className="flex flex-wrap gap-x-2 gap-y-0.5">
               {video.tags.map((tag: string) => (
