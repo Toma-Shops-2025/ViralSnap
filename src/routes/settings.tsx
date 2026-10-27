@@ -16,6 +16,7 @@ import {
   Wifi,
   Volume2,
   Moon,
+  Clock,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -25,7 +26,10 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { useProSubscription } from "@/hooks/use-pro";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
-import { usePlaybackPreferences } from "@/hooks/use-playback-preferences";
+import {
+  type PlaybackSpeed,
+  usePlaybackPreferences,
+} from "@/hooks/use-playback-preferences";
 import { useTheme, type Theme } from "@/hooks/use-theme";
 
 export const Route = createFileRoute("/settings")({
@@ -38,6 +42,7 @@ function SettingsPage() {
   const { isPro } = useProSubscription();
   const { theme, setTheme } = useTheme();
   const playback = usePlaybackPreferences();
+  const speedOptions: PlaybackSpeed[] = [0.5, 1, 1.25, 1.5, 2];
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [editName, setEditName] = useState(false);
@@ -302,6 +307,32 @@ function SettingsPage() {
               checked={playback.autoScroll}
               onCheckedChange={playback.setAutoScroll}
             />
+          </div>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-sm font-medium">Playback speed</span>
+            </div>
+            <div className="mt-3 flex gap-1 rounded-xl bg-secondary/60 p-1">
+              {speedOptions.map((speed) => {
+                const label = speed === 1 ? "1.0×" : `${speed}×`;
+                const active = playback.playbackSpeed === speed;
+                return (
+                  <button
+                    key={speed}
+                    type="button"
+                    onClick={() => playback.setPlaybackSpeed(speed)}
+                    className={`flex-1 rounded-lg py-2 text-xs font-bold transition-colors ${
+                      active
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
             <SettingToggleRow
