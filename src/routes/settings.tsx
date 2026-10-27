@@ -3,19 +3,19 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   User,
-  Shield,
-  CreditCard,
-  Bell,
   Trash2,
   ChevronRight,
   LogOut,
   Mail,
   Camera,
   Loader2,
-  Lock,
-  Globe,
   HelpCircle,
   Gem,
+  ArrowUpFromLine,
+  Maximize2,
+  Wifi,
+  Volume2,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -24,6 +24,9 @@ import { createSubscriptionPortalSession } from "@/lib/payments.functions";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { useProSubscription } from "@/hooks/use-pro";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { usePlaybackPreferences } from "@/hooks/use-playback-preferences";
+import { useTheme, type Theme } from "@/hooks/use-theme";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — ViralSnap" }] }),
@@ -33,6 +36,8 @@ export const Route = createFileRoute("/settings")({
 function SettingsPage() {
   const { user, profile, loading, refreshProfile, signOut } = useAuth();
   const { isPro } = useProSubscription();
+  const { theme, setTheme } = useTheme();
+  const playback = usePlaybackPreferences();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [editName, setEditName] = useState(false);
@@ -283,16 +288,90 @@ function SettingsPage() {
           </div>
         </section>
 
-        {/* preferences */}
+        {/* playback */}
         <section>
           <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            Preferences
+            Playback
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+            <SettingToggleRow
+              icon={ArrowUpFromLine}
+              label="Auto scroll"
+              description="Advance to the next video when one ends"
+              highlight
+              checked={playback.autoScroll}
+              onCheckedChange={playback.setAutoScroll}
+            />
+          </div>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+            <SettingToggleRow
+              icon={Maximize2}
+              label="Clear display"
+              description="Hide feed buttons and captions"
+              checked={playback.clearDisplay}
+              onCheckedChange={playback.setClearDisplay}
+            />
+            <SettingToggleRow
+              icon={Wifi}
+              label="Data saver"
+              description="Only buffer the video you're watching"
+              checked={playback.dataSaver}
+              onCheckedChange={playback.setDataSaver}
+            />
+            <SettingToggleRow
+              icon={Volume2}
+              label="Start muted"
+              description="Keep sound off until you tap unmute"
+              checked={playback.startMuted}
+              onCheckedChange={playback.setStartMuted}
+            />
+          </div>
+        </section>
+
+        {/* appearance */}
+        <section>
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Appearance
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <Moon className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-sm font-medium">Theme</span>
+            </div>
+            <div className="mt-3 flex gap-1 rounded-xl bg-secondary/60 p-1">
+              {(["system", "light", "dark"] as Theme[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTheme(t)}
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold capitalize transition-colors ${
+                    theme === t
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* notifications placeholder */}
+        <section>
+          <h2 className="mb-4 px-1 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            Notifications
           </h2>
           <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
-            <SettingRow icon={Mail} label="Email Notifications" active />
-            <SettingRow icon={Bell} label="Push Notifications" active />
-            <SettingRow icon={Lock} label="Privacy & Security" />
-            <SettingRow icon={Globe} label="Language" value="English" />
+            <SettingToggleRow
+              icon={Mail}
+              label="Email updates"
+              description="Product news and payout summaries"
+              checked={true}
+              onCheckedChange={() =>
+                toast.message("Email preferences are coming soon")
+              }
+            />
           </div>
         </section>
 
@@ -337,32 +416,45 @@ function SettingsPage() {
   );
 }
 
-function SettingRow({
+function SettingToggleRow({
   icon: Icon,
   label,
-  value,
-  active
+  description,
+  checked,
+  onCheckedChange,
+  highlight,
 }: {
-  icon: any,
-  label: string,
-  value?: string,
-  active?: boolean
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onCheckedChange: (value: boolean) => void;
+  highlight?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 transition-colors hover:bg-secondary/20 cursor-pointer">
-      <div className="flex items-center gap-3">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-        <span className="text-sm">{label}</span>
+    <div
+      className={`flex items-center gap-3 p-4 ${highlight ? "bg-primary/5" : ""}`}
+    >
+      <div
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+          highlight ? "bg-primary/15" : "bg-secondary"
+        }`}
+      >
+        <Icon
+          className={`h-5 w-5 ${highlight ? "text-primary" : "text-muted-foreground"}`}
+        />
       </div>
-      <div className="flex items-center gap-2">
-        {value && <span className="text-xs text-muted-foreground">{value}</span>}
-        {active !== undefined && (
-           <div className={`h-5 w-9 rounded-full p-1 transition-colors ${active ? 'bg-primary' : 'bg-muted'}`}>
-             <div className={`h-3 w-3 rounded-full bg-white transition-transform ${active ? 'translate-x-4' : 'translate-x-0'}`} />
-           </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        {description && (
+          <p className="text-xs text-muted-foreground">{description}</p>
         )}
-        {!active && !value && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
       </div>
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        className="h-7 w-12 shrink-0 data-[state=checked]:bg-primary [&>span]:h-6 [&>span]:w-6 [&>span]:data-[state=checked]:translate-x-5"
+      />
     </div>
   );
 }

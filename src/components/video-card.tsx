@@ -32,6 +32,10 @@ interface VideoCardProps {
   isMuted: boolean;
   volume?: number;
   onToggleMute: () => void;
+  loop?: boolean;
+  playbackRate?: number;
+  onEnded?: () => void;
+  clearDisplay?: boolean;
 }
 
 export function VideoCard({
@@ -41,6 +45,10 @@ export function VideoCard({
   isMuted,
   volume = 1,
   onToggleMute,
+  loop = true,
+  playbackRate = 1,
+  onEnded,
+  clearDisplay = false,
 }: VideoCardProps) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -140,9 +148,13 @@ export function VideoCard({
         isMuted={isMuted}
         volume={volume}
         onToggleMute={onToggleMute}
+        loop={loop}
+        playbackRate={playbackRate}
+        onEnded={onEnded}
       />
 
       {/* side actions */}
+      {!clearDisplay && (
       <div className="absolute bottom-24 right-3 z-20 flex flex-col items-center gap-6">
         <div className="relative mb-2">
           <Link to="/u/$username" params={{ username: video.creator.username }}>
@@ -306,8 +318,10 @@ export function VideoCard({
           <span className="text-xs font-bold text-white drop-shadow-md">Share</span>
         </button>
       </div>
+      )}
 
       {/* bottom info + optional product link (stacked so the CTA never covers caption) */}
+      {!clearDisplay && (
       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pb-12 pt-12">
         <div className="space-y-2 pr-16">
           {video.product_url && (
@@ -348,6 +362,7 @@ export function VideoCard({
           )}
         </div>
       </div>
+      )}
 
       <ReportDialog
         open={reportOpen}

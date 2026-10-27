@@ -1,7 +1,10 @@
 import { createFileRoute, useParams, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake, Share2, LinkIcon, X, Pencil, Trash2, Loader2, ArrowLeft } from "lucide-react";
+import { Play, Heart, Settings, LogOut, Gift, Flame, HeartHandshake, Share2, LinkIcon, X, Pencil, Trash2, Loader2, ArrowLeft, ArrowUpFromLine, SlidersHorizontal } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { usePlaybackPreferences } from "@/hooks/use-playback-preferences";
+import { PlaybackSettingsSheet } from "@/components/playback-settings-sheet";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -103,6 +106,8 @@ function ProfilePage() {
   const [viewMode, setViewMode] = useState<"grid" | "feed">("grid");
   const [activeIdx, setActiveIdx] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [playbackSheetOpen, setPlaybackSheetOpen] = useState(false);
+  const { autoScroll, setAutoScroll } = usePlaybackPreferences();
 
   // Ownership Edit State
   const [editingVideo, setEditingPost] = useState<Vid | null>(null);
@@ -335,6 +340,38 @@ function ProfilePage() {
         <p className="text-sm text-muted-foreground">@{profile.username}</p>
         {profile.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
 
+        {isMe && (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card shadow-sm">
+            <div className="flex items-center gap-3 p-4">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/20">
+                <ArrowUpFromLine className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-sm font-bold text-foreground">Auto scroll</p>
+                <p className="text-xs text-muted-foreground">
+                  TikTok-style — next video when one finishes
+                </p>
+              </div>
+              <Switch
+                checked={autoScroll}
+                onCheckedChange={setAutoScroll}
+                className="h-8 w-14 shrink-0 data-[state=checked]:bg-primary [&>span]:h-7 [&>span]:w-7 [&>span]:data-[state=checked]:translate-x-6"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setPlaybackSheetOpen(true)}
+              className="flex w-full items-center justify-between border-t border-border/80 px-4 py-3 text-left transition-colors hover:bg-secondary/30"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                More playback settings
+              </span>
+              <span className="text-xs font-medium text-muted-foreground">Speed, data saver…</span>
+            </button>
+          </div>
+        )}
+
         <div className="mt-2 flex flex-col gap-1.5">
           {(profile as any).links && Array.isArray((profile as any).links) ? (
             (profile as any).links.map((link: string, i: number) => (
@@ -432,6 +469,13 @@ function ProfilePage() {
           onOpenChange={setShowGift}
           receiverId={data.profile.id}
           receiverName={data.profile.username}
+        />
+      )}
+
+      {isMe && (
+        <PlaybackSettingsSheet
+          open={playbackSheetOpen}
+          onOpenChange={setPlaybackSheetOpen}
         />
       )}
     </div>

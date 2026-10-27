@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Flame, Sparkles, Radio, Bell, Volume2, VolumeX } from "lucide-react";
+import {
+  PlaybackSettingsSheet,
+  PlaybackSettingsTriggerButton,
+} from "@/components/playback-settings-sheet";
+import { usePlaybackPreferences } from "@/hooks/use-playback-preferences";
 import { fetchFeedPage, fetchFollowingFeedPage, clearFeedLibraryCaches } from "@/lib/feed";
 import { newSessionSeed } from "@/lib/shuffle";
 import { VideoCard } from "@/components/video-card";
@@ -34,11 +39,26 @@ export const Route = createFileRoute("/")({
 type Tab = "foryou" | "following";
 
 function FeedPage() {
+  const {
+    autoScroll,
+    playbackSpeed,
+    clearDisplay,
+    dataSaver,
+    startMuted,
+  } = usePlaybackPreferences();
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [tab, setTab] = useState<Tab>("foryou");
+  const [playbackSettingsOpen, setPlaybackSettingsOpen] = useState(false);
+  const muteInitialized = useRef(false);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (muteInitialized.current) return;
+    muteInitialized.current = true;
+    setMuted(startMuted);
+  }, [startMuted]);
 
   const unmuteFeed = () => {
     setMuted(false);
@@ -153,7 +173,37 @@ function FeedPage() {
     if (activeIndex >= items.length - 2) void fetchNextPage();
   }, [activeIndex, items.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const scrollToFeedIndex = useCallback(
+    (idx: number) => {
+      const root = feedRef.current;
+      if (!root) return;
+      const el = root.querySelector<HTMLElement>(`[data-feed-item][data-idx="${idx}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [],
+  );
 
+  const handleActiveVideoEnded = useCallback(() => {
+    if (!autoScroll) return;
+    const nextIdx = activeIndex + 1;
+    if (nextIdx < items.length) {
+      scrollToFeedIndex(nextIdx);
+      return;
+    }
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage().then(() => {
+        requestAnimationFrame(() => scrollToFeedIndex(nextIdx));
+      });
+    }
+  }, [
+    activeIndex,
+    autoScroll,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    items.length,
+    scrollToFeedIndex,
+  ]);
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-black">
@@ -197,6 +247,9 @@ function FeedPage() {
               className="volume-slider h-20 w-1 cursor-pointer appearance-none rounded-full bg-white/25 [writing-mode:vertical-lr] [direction:rtl]"
             />
           </div>
+          <PlaybackSettingsTriggerButton
+            onClick={() => setPlaybackSettingsOpen(true)}
+          />
         </div>
 
         <div className="pointer-events-auto flex items-center gap-4 pt-0.5">
@@ -228,10 +281,18 @@ function FeedPage() {
               <VideoCard
                 video={video}
                 isActive={idx === activeIndex}
-                isNear={Math.abs(idx - activeIndex) <= 1}
+                isNear={
+                  !dataSaver && Math.abs(idx - activeIndex) <= 1
+                }
                 isMuted={muted}
                 volume={volume}
                 onToggleMute={toggleMute}
+                loop={!autoScroll}
+                playbackRate={playbackSpeed}
+                onEnded={
+                  idx === activeIndex ? handleActiveVideoEnded : undefined
+                }
+                clearDisplay={clearDisplay}
               />
             </div>
           ))}
@@ -246,6 +307,10 @@ function FeedPage() {
 
       <BottomNav />
       <OnboardingWalkthrough />
+      <PlaybackSettingsSheet
+        open={playbackSettingsOpen}
+        onOpenChange={setPlaybackSettingsOpen}
+      />
     </div>
   );
 }
