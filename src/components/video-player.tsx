@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import Hls from "hls.js";
+import { PIP_REQUEST_EVENT } from "@/hooks/use-playback-preferences";
 
 interface VideoPlayerProps {
   url: string;
@@ -13,6 +14,8 @@ interface VideoPlayerProps {
   loop?: boolean;
   playbackRate?: number;
   onEnded?: () => void;
+  /** When false, user must tap to start playback (e.g. Wi‑Fi only on cellular). */
+  allowAutoplay?: boolean;
 }
 
 export function VideoPlayer({
@@ -26,6 +29,7 @@ export function VideoPlayer({
   loop = true,
   playbackRate = 1,
   onEnded,
+  allowAutoplay = true,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -85,9 +89,13 @@ export function VideoPlayer({
       }
       el.muted = isMuted;
       el.volume = Math.min(1, Math.max(0, volume));
-      void el.play().catch((err) => {
-        console.warn("Video play failed:", err);
-      });
+      if (allowAutoplay) {
+        void el.play().catch((err) => {
+          console.warn("Video play failed:", err);
+        });
+      } else {
+        el.pause();
+      }
     } else {
       el.pause();
       try {
@@ -97,7 +105,21 @@ export function VideoPlayer({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit mute/volume
-  }, [isActive, url, shouldLoad]);
+  }, [isActive, url, shouldLoad, allowAutoplay]);
+
+  useEffect(() => {
+    const onPip = () => {
+      const el = videoRef.current;
+      if (!el || !isActive) return;
+      const doc = document as Document & {
+        pictureInPictureEnabled?: boolean;
+      };
+      if (!doc.pictureInPictureEnabled) return;
+      void el.requestPictureInPicture().catch(() => {});
+    };
+    window.addEventListener(PIP_REQUEST_EVENT, onPip);
+    return () => window.removeEventListener(PIP_REQUEST_EVENT, onPip);
+  }, [isActive]);
 
   // Unmute / volume / speed — keep playback position.
   useEffect(() => {
@@ -146,6 +168,10 @@ export function VideoPlayer({
           if (isActive) onEnded?.();
         }}
         onClick={() => {
+          const el = videoRef.current;
+          if (el?.paused && isActive) {
+            void el.play().catch(() => {});
+          }
           if (isMuted) onToggleMute();
         }}
       />

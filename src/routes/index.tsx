@@ -16,6 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { getBlockedCreatorIds } from "@/lib/blocked-creators";
+import {
+  FEED_SIGNALS_CHANGED,
+  getNotInterestedCreatorIds,
+  getNotInterestedVideoIds,
+} from "@/lib/feed-signals";
+import { useMeteredConnection } from "@/hooks/use-metered-connection";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -45,7 +51,12 @@ function FeedPage() {
     clearDisplay,
     dataSaver,
     startMuted,
+    wifiOnlyPlayback,
+    reduceMotion,
+    showCaptions,
   } = usePlaybackPreferences();
+  const metered = useMeteredConnection();
+  const restrictPlayback = wifiOnlyPlayback && metered;
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
   const [tab, setTab] = useState<Tab>("foryou");
@@ -101,36 +112,43 @@ function FeedPage() {
   const feedRef = useRef<HTMLDivElement>(null);
 
 
-  const [blockedTick, setBlockedTick] = useState(0);
+  const [feedFilterTick, setFeedFilterTick] = useState(0);
   useEffect(() => {
-    setBlockedTick((t) => t + 1);
+    setFeedFilterTick((t) => t + 1);
     const refresh = () => {
       clearFeedLibraryCaches();
       void queryClient.invalidateQueries({ queryKey: ["feed"] });
-      setBlockedTick((t) => t + 1);
+      setFeedFilterTick((t) => t + 1);
     };
+    const onSignals = () => setFeedFilterTick((t) => t + 1);
     window.addEventListener("focus", refresh);
+    window.addEventListener(FEED_SIGNALS_CHANGED, onSignals);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") refresh();
     });
     return () => {
       window.removeEventListener("focus", refresh);
+      window.removeEventListener(FEED_SIGNALS_CHANGED, onSignals);
     };
   }, [queryClient]);
 
   const items = useMemo(() => {
     const blocked = new Set(getBlockedCreatorIds());
+    const hideCreators = new Set(getNotInterestedCreatorIds());
+    const hideVideos = new Set(getNotInterestedVideoIds());
     const pages = data?.pages ?? [];
     const out: { video: (typeof pages)[0]["items"][0]; key: string }[] = [];
     for (const page of pages) {
       for (const video of page.items) {
         if (blocked.has(video.creator_id)) continue;
+        if (hideCreators.has(video.creator_id)) continue;
+        if (hideVideos.has(video.id)) continue;
         // Unique key per occurrence so wrap-around can re-show the same video.
         out.push({ video, key: `${video.id}-${out.length}` });
       }
     }
     return out;
-  }, [data, blockedTick]);
+  }, [data, feedFilterTick]);
 
   useEffect(() => {
     const root = feedRef.current;
@@ -178,10 +196,23 @@ function FeedPage() {
       const root = feedRef.current;
       if (!root) return;
       const el = root.querySelector<HTMLElement>(`[data-feed-item][data-idx="${idx}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      el?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
     },
-    [],
+    [reduceMotion],
   );
+
+  const dismissActiveVideo = useCallback(() => {
+    setFeedFilterTick((t) => t + 1);
+    requestAnimationFrame(() => {
+      const idx = Math.min(activeIndex, Math.max(0, items.length - 2));
+      if (items.length > 1) scrollToFeedIndex(idx);
+    });
+  }, [activeIndex, items.length, scrollToFeedIndex]);
+
+  const activeVideo = items[activeIndex]?.video;
 
   const handleActiveVideoEnded = useCallback(() => {
     if (!autoScroll) return;
@@ -275,14 +306,22 @@ function FeedPage() {
           <Skeleton className="h-full w-full bg-secondary/40" />
         </div>
       ) : items.length > 0 ? (
-        <div ref={feedRef} className="h-full snap-y snap-mandatory overflow-y-scroll no-scrollbar">
+        <div
+          ref={feedRef}
+          className={cn(
+            "h-full overflow-y-scroll no-scrollbar",
+            reduceMotion ? "snap-y snap-proximity" : "snap-y snap-mandatory",
+          )}
+        >
           {items.map(({ video, key }, idx) => (
             <div key={key} data-feed-item data-idx={idx}>
               <VideoCard
                 video={video}
                 isActive={idx === activeIndex}
                 isNear={
-                  !dataSaver && Math.abs(idx - activeIndex) <= 1
+                  !dataSaver &&
+                  !restrictPlayback &&
+                  Math.abs(idx - activeIndex) <= 1
                 }
                 isMuted={muted}
                 volume={volume}
@@ -293,6 +332,9 @@ function FeedPage() {
                   idx === activeIndex ? handleActiveVideoEnded : undefined
                 }
                 clearDisplay={clearDisplay}
+                showCaptions={showCaptions}
+                allowAutoplay={!restrictPlayback}
+                onNotInterested={dismissActiveVideo}
               />
             </div>
           ))}
@@ -310,6 +352,16 @@ function FeedPage() {
       <PlaybackSettingsSheet
         open={playbackSettingsOpen}
         onOpenChange={setPlaybackSettingsOpen}
+        feedContext={
+          activeVideo
+            ? {
+                videoId: activeVideo.id,
+                creatorId: activeVideo.creator_id,
+                creatorUsername: activeVideo.creator?.username,
+                onDismissed: dismissActiveVideo,
+              }
+            : null
+        }
       />
     </div>
   );

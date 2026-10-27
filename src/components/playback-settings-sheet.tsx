@@ -2,11 +2,21 @@ import {
   ArrowUpFromLine,
   Clock,
   Gauge,
+  HeartOff,
   Maximize2,
+  PictureInPicture2,
   SlidersHorizontal,
+  Subtitles,
   Volume2,
   Wifi,
+  WifiOff,
+  Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  markCreatorNotInterested,
+  markVideoNotInterested,
+} from "@/lib/feed-signals";
 import {
   Sheet,
   SheetContent,
@@ -23,25 +33,50 @@ import {
 
 const SPEED_OPTIONS: PlaybackSpeed[] = [0.5, 1, 1.25, 1.5, 2];
 
+type FeedContext = {
+  videoId: string;
+  creatorId: string;
+  creatorUsername?: string;
+  onDismissed?: () => void;
+};
+
 type Props = {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  feedContext?: FeedContext | null;
 };
 
-export function PlaybackSettingsSheet({ trigger, open, onOpenChange }: Props) {
+export function PlaybackSettingsSheet({
+  trigger,
+  open,
+  onOpenChange,
+  feedContext,
+}: Props) {
   const {
     autoScroll,
     playbackSpeed,
     clearDisplay,
     dataSaver,
     startMuted,
+    wifiOnlyPlayback,
+    reduceMotion,
+    showCaptions,
     setAutoScroll,
     setPlaybackSpeed,
     setClearDisplay,
     setDataSaver,
     setStartMuted,
+    setWifiOnlyPlayback,
+    setReduceMotion,
+    setShowCaptions,
+    requestPictureInPicture,
   } = usePlaybackPreferences();
+
+  const pipSupported =
+    typeof document !== "undefined" &&
+    !!(document as Document & { pictureInPictureEnabled?: boolean })
+      .pictureInPictureEnabled;
 
   const content = (
     <SheetContent
@@ -134,6 +169,118 @@ export function PlaybackSettingsSheet({ trigger, open, onOpenChange }: Props) {
             className="h-7 w-12 data-[state=checked]:bg-primary [&>span]:h-6 [&>span]:w-6 [&>span]:data-[state=checked]:translate-x-5"
           />
         </PreferenceRow>
+
+        <PreferenceRow
+          icon={WifiOff}
+          label="Wi‑Fi only playback"
+          description="On cellular, tap to play instead of autoplay"
+        >
+          <Switch
+            checked={wifiOnlyPlayback}
+            onCheckedChange={setWifiOnlyPlayback}
+            className="h-7 w-12 data-[state=checked]:bg-primary [&>span]:h-6 [&>span]:w-6 [&>span]:data-[state=checked]:translate-x-5"
+          />
+        </PreferenceRow>
+
+        <PreferenceRow
+          icon={Subtitles}
+          label="Captions"
+          description="Show the post caption while you watch"
+        >
+          <Switch
+            checked={showCaptions}
+            onCheckedChange={setShowCaptions}
+            className="h-7 w-12 data-[state=checked]:bg-primary [&>span]:h-6 [&>span]:w-6 [&>span]:data-[state=checked]:translate-x-5"
+          />
+        </PreferenceRow>
+
+        <PreferenceRow
+          icon={Sparkles}
+          label="Reduce motion"
+          description="Less snap scrolling and smoother transitions"
+        >
+          <Switch
+            checked={reduceMotion}
+            onCheckedChange={setReduceMotion}
+            className="h-7 w-12 data-[state=checked]:bg-primary [&>span]:h-6 [&>span]:w-6 [&>span]:data-[state=checked]:translate-x-5"
+          />
+        </PreferenceRow>
+
+        {pipSupported && (
+          <button
+            type="button"
+            onClick={() => {
+              requestPictureInPicture();
+              toast.message("Picture-in-Picture", {
+                description: "Playing the current video in a floating window.",
+              });
+            }}
+            className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-secondary/40"
+          >
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary">
+              <PictureInPicture2 className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                Picture-in-Picture
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Keep watching while you browse
+              </p>
+            </div>
+          </button>
+        )}
+
+        {feedContext && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                markVideoNotInterested(feedContext.videoId);
+                feedContext.onDismissed?.();
+                onOpenChange?.(false);
+                toast.success("We'll show fewer videos like this");
+              }}
+              className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-secondary/40"
+            >
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary">
+                <HeartOff className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Not interested
+                </p>
+                <p className="text-xs text-muted-foreground">Hide this video</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                markCreatorNotInterested(feedContext.creatorId);
+                feedContext.onDismissed?.();
+                onOpenChange?.(false);
+                toast.success(
+                  feedContext.creatorUsername
+                    ? `We'll show less from @${feedContext.creatorUsername}`
+                    : "We'll show less from this creator",
+                );
+              }}
+              className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-secondary/40"
+            >
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-secondary">
+                <HeartOff className="h-5 w-5 text-rose-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  Not interested in creator
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Hide posts from this account
+                </p>
+              </div>
+            </button>
+          </>
+        )}
       </div>
     </SheetContent>
   );

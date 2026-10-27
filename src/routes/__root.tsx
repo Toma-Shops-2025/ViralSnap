@@ -9,6 +9,7 @@ import {
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { PlaybackPreferencesProvider } from "@/hooks/use-playback-preferences";
+import { NotificationPreferencesProvider } from "@/hooks/use-notification-preferences";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode } from "react";
@@ -110,12 +111,14 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <PlaybackPreferencesProvider>
-          <AuthProvider>
-            <div className="min-h-screen bg-black text-white">
-              <Outlet />
-              <Toaster position="top-center" richColors />
-            </div>
-          </AuthProvider>
+          <NotificationPreferencesProvider>
+            <AuthProvider>
+              <div className="min-h-screen bg-black text-white">
+                <Outlet />
+                <Toaster position="top-center" richColors />
+              </div>
+            </AuthProvider>
+          </NotificationPreferencesProvider>
         </PlaybackPreferencesProvider>
       </ThemeProvider>
     </QueryClientProvider>

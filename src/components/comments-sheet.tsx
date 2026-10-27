@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  censorMutedWords,
+  getMutedWords,
+  textHasMutedWord,
+} from "@/lib/muted-words";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Send, Pin } from "lucide-react";
@@ -79,6 +85,16 @@ export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: P
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [mutedWords, setMutedWordsState] = useState<string[]>(() =>
+    getMutedWords(),
+  );
+
+  useEffect(() => {
+    const refresh = () => setMutedWordsState(getMutedWords());
+    window.addEventListener("viralsnap-muted-words-changed", refresh);
+    return () =>
+      window.removeEventListener("viralsnap-muted-words-changed", refresh);
+  }, []);
 
   const { data } = useQuery({
     queryKey: ["comments", videoId],
@@ -86,8 +102,13 @@ export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: P
     enabled: open,
   });
 
-  const comments = data?.comments ?? [];
-  const pinned = data?.pinned;
+  const comments = (data?.comments ?? []).filter(
+    (c) => !textHasMutedWord(c.text, mutedWords),
+  );
+  const pinned =
+    data?.pinned && !textHasMutedWord(data.pinned.text, mutedWords)
+      ? data.pinned
+      : null;
 
   const submit = async () => {
     if (!user) {
@@ -97,6 +118,10 @@ export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: P
     }
     const value = text.trim();
     if (!value) return;
+    if (textHasMutedWord(value, mutedWords)) {
+      toast.error("This comment contains a word you've muted");
+      return;
+    }
     setPosting(true);
     const { error } = await supabase
       .from("comments")
@@ -138,7 +163,9 @@ export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: P
                 )}
                 <div className="flex-1">
                   <p className="text-xs text-primary/80 font-semibold">@{pinned.username}</p>
-                  <p className="text-sm text-foreground">{pinned.text}</p>
+                  <p className="text-sm text-foreground">
+                  {censorMutedWords(pinned.text, mutedWords)}
+                </p>
                 </div>
               </div>
             </div>
@@ -163,7 +190,9 @@ export function CommentsSheet({ open, onOpenChange, videoId, onCommentAdded }: P
                 <p className="text-xs text-muted-foreground">
                   @{c.username} · {timeAgo(c.created_at)}
                 </p>
-                <p className="text-sm">{c.text}</p>
+                <p className="text-sm">
+                  {censorMutedWords(c.text, mutedWords)}
+                </p>
               </div>
             </div>
           ))}
