@@ -10,6 +10,9 @@ interface VideoPlayerProps {
   isMuted: boolean;
   volume?: number;
   onToggleMute: () => void;
+  loop?: boolean;
+  playbackRate?: number;
+  onEnded?: () => void;
 }
 
 export function VideoPlayer({
@@ -20,6 +23,9 @@ export function VideoPlayer({
   isMuted,
   volume = 1,
   onToggleMute,
+  loop = true,
+  playbackRate = 1,
+  onEnded,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -93,16 +99,17 @@ export function VideoPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit mute/volume
   }, [isActive, url, shouldLoad]);
 
-  // Unmute / volume — keep playback position.
+  // Unmute / volume / speed — keep playback position.
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !isActive) return;
     el.muted = isMuted;
     el.volume = Math.min(1, Math.max(0, volume));
+    el.playbackRate = playbackRate;
     if (!isMuted) {
       void el.play().catch(() => {});
     }
-  }, [isMuted, volume, isActive]);
+  }, [isMuted, volume, playbackRate, isActive]);
 
   // Stop audio when user leaves the tab / minimizes the window.
   useEffect(() => {
@@ -131,10 +138,13 @@ export function VideoPlayer({
         poster={poster ?? undefined}
         crossOrigin="anonymous"
         preload={shouldLoad ? "metadata" : "none"}
-        loop
+        loop={loop}
         playsInline
         muted={isMuted}
         className="h-full w-full object-cover"
+        onEnded={() => {
+          if (isActive) onEnded?.();
+        }}
         onClick={() => {
           if (isMuted) onToggleMute();
         }}
