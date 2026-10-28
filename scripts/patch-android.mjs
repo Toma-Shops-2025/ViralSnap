@@ -38,6 +38,22 @@ function copyMainActivity() {
   console.log("patched MainActivity.java (enableEdgeToEdge)");
 }
 
+function patchAppDependencies() {
+  const file = path.join(androidDir, "app/build.gradle");
+  let content = read(file);
+  const marker = "// ViralSnap: WindowCompat.enableEdgeToEdge";
+  if (content.includes(marker)) {
+    return;
+  }
+  const dep = `    ${marker}\n    implementation "androidx.core:core:1.16.0"\n`;
+  if (!content.includes("dependencies {")) {
+    throw new Error("Unexpected app/build.gradle shape (no dependencies block)");
+  }
+  content = content.replace(/dependencies\s*\{/, `dependencies {\n${dep}`);
+  write(file, content);
+  console.log("patched app/build.gradle (androidx.core for edge-to-edge)");
+}
+
 function patchAppBuildGradle() {
   const file = path.join(androidDir, "app/build.gradle");
   let content = read(file);
@@ -64,21 +80,40 @@ function patchAppBuildGradle() {
   console.log("patched app/build.gradle (R8 minify + shrinkResources)");
 }
 
+function repairCorruptedGradleProperties(content) {
+  // Older patch runs glued R8 flags onto android.useAndroidX=true (missing newline).
+  const glued =
+    /^(android\.useAndroidX=)true(android\.enableR8\.fullMode=true)(android\.r8\.optimizedResourceShrinking=true)\s*$/m;
+  if (glued.test(content)) {
+    return content.replace(
+      glued,
+      "android.useAndroidX=true\nandroid.enableR8.fullMode=true\nandroid.r8.optimizedResourceShrinking=true\n",
+    );
+  }
+  return content;
+}
+
 function patchGradleProperties() {
   const file = path.join(androidDir, "gradle.properties");
   let content = fs.existsSync(file) ? read(file) : "";
+  content = repairCorruptedGradleProperties(content);
 
   const lines = [
     "android.enableR8.fullMode=true",
     "android.r8.optimizedResourceShrinking=true",
   ];
 
+  if (content.length > 0 && !content.endsWith("\n")) {
+    content += "\n";
+  }
+
   for (const line of lines) {
     const key = line.split("=")[0];
-    if (content.includes(`${key}=`)) {
-      content = content.replace(new RegExp(`^${key}=.*$`, "m"), line);
+    const re = new RegExp(`^${key}=.*\r?$`, "m");
+    if (re.test(content)) {
+      content = content.replace(re, line);
     } else {
-      content = content.trimEnd() + (content.endsWith("\n") ? "" : "\n") + line + "\n";
+      content += `${line}\n`;
     }
   }
 
