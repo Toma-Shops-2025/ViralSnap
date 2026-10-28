@@ -12,6 +12,10 @@ function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 Step "Switching to project: $ProjectPath"
 Set-Location $ProjectPath
 
+Step "Pull latest main (fixes MainActivity / patch-android)"
+git pull origin main
+if ($LASTEXITCODE -ne 0) { throw "git pull failed — commit or stash local changes first" }
+
 if (-not (Test-Path -LiteralPath $KeystorePath -PathType Leaf)) {
     Write-Host "`n  Keystore file not found: $KeystorePath" -ForegroundColor Red
     Write-Host "  Create the folder and generate the keystore before building:" -ForegroundColor Yellow
