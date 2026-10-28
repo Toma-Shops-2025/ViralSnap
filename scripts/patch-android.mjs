@@ -38,6 +38,22 @@ function copyMainActivity() {
   console.log("patched MainActivity.java (enableEdgeToEdge)");
 }
 
+function patchAppDependencies() {
+  const file = path.join(androidDir, "app/build.gradle");
+  let content = read(file);
+  const marker = "// ViralSnap: WindowCompat.enableEdgeToEdge";
+  if (content.includes(marker)) {
+    return;
+  }
+  const dep = `    ${marker}\n    implementation "androidx.core:core:1.16.0"\n`;
+  if (!content.includes("dependencies {")) {
+    throw new Error("Unexpected app/build.gradle shape (no dependencies block)");
+  }
+  content = content.replace(/dependencies\s*\{/, `dependencies {\n${dep}`);
+  write(file, content);
+  console.log("patched app/build.gradle (androidx.core for edge-to-edge)");
+}
+
 function patchAppBuildGradle() {
   const file = path.join(androidDir, "app/build.gradle");
   let content = read(file);
