@@ -14,7 +14,7 @@ Set-Location $ProjectPath
 
 Step "Pull latest main (fixes MainActivity / patch-android)"
 git pull origin main
-if ($LASTEXITCODE -ne 0) { throw "git pull failed — commit or stash local changes first" }
+if ($LASTEXITCODE -ne 0) { throw "git pull failed - commit or stash local changes first" }
 
 if (-not (Test-Path -LiteralPath $KeystorePath -PathType Leaf)) {
     Write-Host "`n  Keystore file not found: $KeystorePath" -ForegroundColor Red
